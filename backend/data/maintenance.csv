@@ -1,0 +1,15 @@
+year,month,day,state,plant,asset_id,asset_type,maintenance_type,status,scheduled_date,estimated_duration_hours
+2023,February,15,California,P01 - San Francisco,CASF175811708,Motor Compressor,Preventive,In Progress,2023-02-15,8
+2023,February,18,North Dakota,P02 - Bismarck,NDBS4123456789,Motor Fan,Corrective,In Progress,2023-02-18,4
+2023,February,20,North Dakota,P01 - Grand Forks,NDGF8567890123,Motor Fan,Preventive,In Progress,2023-02-20,6
+2023,February,22,Louisiana,P02 - Baton Rouge,LABR4903786667,Generator,Emergency,Scheduled,2023-02-22,12
+2023,February,22,Louisiana,P02 - Baton Rouge,LABR4956922143,Motor Pump,Emergency,Scheduled,2023-02-22,10
+2023,February,25,North Carolina,P01 - Raleigh,NCRL5809796633,Motor Fan,Emergency,Scheduled,2023-02-25,8
+2023,February,28,North Dakota,P02 - Bismarck,NDBS2526194640,Motor Pump,Emergency,Scheduled,2023-02-28,12
+2023,March,5,California,P01 - San Francisco,CASF1427567615,Motor Pump,Preventive,Scheduled,2023-03-05,6
+2023,March,8,North Dakota,P02 - Bismarck,NDBS2148259407,Motor Compressor,Preventive,Scheduled,2023-03-08,8
+2023,March,12,California,P01 - San Francisco,CASF1759317908,Motor Compressor,Preventive,Scheduled,2023-03-12,4
+2023,March,15,Louisiana,P01 - Lafayette,LALF8456789012,Motor Pump,Preventive,Scheduled,2023-03-15,6
+2023,March,18,New York,P01 - Albany,NYAL2890123456,Motor Pump,Preventive,Scheduled,2023-03-18,5
+2023,March,20,North Carolina,P01 - Raleigh,NCRL6234567890,Motor Compressor,Preventive,Scheduled,2023-03-20,8
+

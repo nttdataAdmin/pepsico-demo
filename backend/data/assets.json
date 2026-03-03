@@ -1,0 +1,395 @@
+{
+  "assets": [
+    {
+      "asset_id": "CASF1427567615",
+      "state": "California",
+      "plant": "P01 - San Francisco",
+      "asset_type": "Motor Pump",
+      "status": "Failure Predicted",
+      "criticality": "High",
+      "location": {"lat": 37.7749, "lon": -122.4194},
+      "rul": 700
+    },
+    {
+      "asset_id": "CASF1759317908",
+      "state": "California",
+      "plant": "P01 - San Francisco",
+      "asset_type": "Motor Compressor",
+      "status": "Working",
+      "criticality": "Medium",
+      "location": {"lat": 37.7749, "lon": -122.4194},
+      "rul": 1200
+    },
+    {
+      "asset_id": "CASF1243678649",
+      "state": "California",
+      "plant": "P01 - San Francisco",
+      "asset_type": "Motor Fan",
+      "status": "Working",
+      "criticality": "Low",
+      "location": {"lat": 37.7749, "lon": -122.4194},
+      "rul": 1500
+    },
+    {
+      "asset_id": "CASF1447361400",
+      "state": "California",
+      "plant": "P01 - San Francisco",
+      "asset_type": "Generator",
+      "status": "Working",
+      "criticality": "Medium",
+      "location": {"lat": 37.7749, "lon": -122.4194},
+      "rul": 1100
+    },
+    {
+      "asset_id": "CASF175811708",
+      "state": "California",
+      "plant": "P01 - San Francisco",
+      "asset_type": "Motor Pump",
+      "status": "Under Maintenance",
+      "criticality": "High",
+      "location": {"lat": 37.7749, "lon": -122.4194},
+      "rul": 600
+    },
+    {
+      "asset_id": "CABK2148259407",
+      "state": "California",
+      "plant": "P02 - Bakersfield",
+      "asset_type": "Motor Compressor",
+      "status": "Working",
+      "criticality": "Medium",
+      "location": {"lat": 35.3733, "lon": -119.0187},
+      "rul": 1300
+    },
+    {
+      "asset_id": "CABK2526194640",
+      "state": "California",
+      "plant": "P02 - Bakersfield",
+      "asset_type": "Motor Pump",
+      "status": "Failure Predicted",
+      "criticality": "Medium",
+      "location": {"lat": 35.3733, "lon": -119.0187},
+      "rul": 750
+    },
+    {
+      "asset_id": "CABK3098765432",
+      "state": "California",
+      "plant": "P02 - Bakersfield",
+      "asset_type": "Generator",
+      "status": "Working",
+      "criticality": "Low",
+      "location": {"lat": 35.3733, "lon": -119.0187},
+      "rul": 1400
+    },
+    {
+      "asset_id": "CABK4123456789",
+      "state": "California",
+      "plant": "P02 - Bakersfield",
+      "asset_type": "Motor Fan",
+      "status": "Under Maintenance",
+      "criticality": "Low",
+      "location": {"lat": 35.3733, "lon": -119.0187},
+      "rul": 800
+    },
+    {
+      "asset_id": "CALA5678901234",
+      "state": "California",
+      "plant": "P03 - Los Angeles",
+      "asset_type": "Motor Compressor",
+      "status": "Working",
+      "criticality": "High",
+      "location": {"lat": 34.0522, "lon": -118.2437},
+      "rul": 1250
+    },
+    {
+      "asset_id": "CALA6789012345",
+      "state": "California",
+      "plant": "P03 - Los Angeles",
+      "asset_type": "Motor Pump",
+      "status": "Working",
+      "criticality": "Medium",
+      "location": {"lat": 34.0522, "lon": -118.2437},
+      "rul": 1150
+    },
+    {
+      "asset_id": "CALA7890123456",
+      "state": "California",
+      "plant": "P03 - Los Angeles",
+      "asset_type": "Generator",
+      "status": "Working",
+      "criticality": "Low",
+      "location": {"lat": 34.0522, "lon": -118.2437},
+      "rul": 1350
+    },
+    {
+      "asset_id": "LABR4903786667",
+      "state": "Louisiana",
+      "plant": "P02 - Baton Rouge",
+      "asset_type": "Generator",
+      "status": "Breakdown",
+      "criticality": "High",
+      "location": {"lat": 30.4515, "lon": -91.1871},
+      "rul": 0
+    },
+    {
+      "asset_id": "LABR4956922143",
+      "state": "Louisiana",
+      "plant": "P02 - Baton Rouge",
+      "asset_type": "Motor Pump",
+      "status": "Breakdown",
+      "criticality": "High",
+      "location": {"lat": 30.4515, "lon": -91.1871},
+      "rul": 0
+    },
+    {
+      "asset_id": "LABR5123456789",
+      "state": "Louisiana",
+      "plant": "P02 - Baton Rouge",
+      "asset_type": "Motor Compressor",
+      "status": "Working",
+      "criticality": "Medium",
+      "location": {"lat": 30.4515, "lon": -91.1871},
+      "rul": 1200
+    },
+    {
+      "asset_id": "LABR6234567890",
+      "state": "Louisiana",
+      "plant": "P02 - Baton Rouge",
+      "asset_type": "Motor Fan",
+      "status": "Failure Predicted",
+      "criticality": "Low",
+      "location": {"lat": 30.4515, "lon": -91.1871},
+      "rul": 650
+    },
+    {
+      "asset_id": "LALF7345678901",
+      "state": "Louisiana",
+      "plant": "P01 - Lafayette",
+      "asset_type": "Motor Compressor",
+      "status": "Working",
+      "criticality": "Medium",
+      "location": {"lat": 30.2241, "lon": -92.0198},
+      "rul": 1100
+    },
+    {
+      "asset_id": "LALF8456789012",
+      "state": "Louisiana",
+      "plant": "P01 - Lafayette",
+      "asset_type": "Motor Pump",
+      "status": "Working",
+      "criticality": "High",
+      "location": {"lat": 30.2241, "lon": -92.0198},
+      "rul": 1000
+    },
+    {
+      "asset_id": "LALF9567890123",
+      "state": "Louisiana",
+      "plant": "P01 - Lafayette",
+      "asset_type": "Generator",
+      "status": "Failure Predicted",
+      "criticality": "Medium",
+      "location": {"lat": 30.2241, "lon": -92.0198},
+      "rul": 700
+    },
+    {
+      "asset_id": "LALF0678901234",
+      "state": "Louisiana",
+      "plant": "P01 - Lafayette",
+      "asset_type": "Motor Fan",
+      "status": "Breakdown",
+      "criticality": "Low",
+      "location": {"lat": 30.2241, "lon": -92.0198},
+      "rul": 0
+    },
+    {
+      "asset_id": "NYAL1789012345",
+      "state": "New York",
+      "plant": "P01 - Albany",
+      "asset_type": "Motor Compressor",
+      "status": "Working",
+      "criticality": "Medium",
+      "location": {"lat": 42.6526, "lon": -73.7562},
+      "rul": 1300
+    },
+    {
+      "asset_id": "NYAL2890123456",
+      "state": "New York",
+      "plant": "P01 - Albany",
+      "asset_type": "Motor Pump",
+      "status": "Working",
+      "criticality": "High",
+      "location": {"lat": 42.6526, "lon": -73.7562},
+      "rul": 1250
+    },
+    {
+      "asset_id": "NYAL3901234567",
+      "state": "New York",
+      "plant": "P01 - Albany",
+      "asset_type": "Generator",
+      "status": "Working",
+      "criticality": "Low",
+      "location": {"lat": 42.6526, "lon": -73.7562},
+      "rul": 1400
+    },
+    {
+      "asset_id": "NYAL4012345678",
+      "state": "New York",
+      "plant": "P01 - Albany",
+      "asset_type": "Motor Fan",
+      "status": "Working",
+      "criticality": "Low",
+      "location": {"lat": 42.6526, "lon": -73.7562},
+      "rul": 1350
+    },
+    {
+      "asset_id": "NYAL5123456789",
+      "state": "New York",
+      "plant": "P01 - Albany",
+      "asset_type": "Motor Compressor",
+      "status": "Working",
+      "criticality": "Medium",
+      "location": {"lat": 42.6526, "lon": -73.7562},
+      "rul": 1200
+    },
+    {
+      "asset_id": "NCRL5809796633",
+      "state": "North Carolina",
+      "plant": "P01 - Raleigh",
+      "asset_type": "Motor Fan",
+      "status": "Breakdown",
+      "criticality": "Medium",
+      "location": {"lat": 35.7796, "lon": -78.6382},
+      "rul": 0
+    },
+    {
+      "asset_id": "NCRL6234567890",
+      "state": "North Carolina",
+      "plant": "P01 - Raleigh",
+      "asset_type": "Motor Compressor",
+      "status": "Working",
+      "criticality": "High",
+      "location": {"lat": 35.7796, "lon": -78.6382},
+      "rul": 1150
+    },
+    {
+      "asset_id": "NCRL7345678901",
+      "state": "North Carolina",
+      "plant": "P01 - Raleigh",
+      "asset_type": "Motor Pump",
+      "status": "Working",
+      "criticality": "Medium",
+      "location": {"lat": 35.7796, "lon": -78.6382},
+      "rul": 1100
+    },
+    {
+      "asset_id": "NCRL8456789012",
+      "state": "North Carolina",
+      "plant": "P01 - Raleigh",
+      "asset_type": "Generator",
+      "status": "Working",
+      "criticality": "Low",
+      "location": {"lat": 35.7796, "lon": -78.6382},
+      "rul": 1300
+    },
+    {
+      "asset_id": "NCBS9567890123",
+      "state": "North Carolina",
+      "plant": "P02 - Bryson City",
+      "asset_type": "Motor Compressor",
+      "status": "Working",
+      "criticality": "Medium",
+      "location": {"lat": 35.4270, "lon": -83.4485},
+      "rul": 1200
+    },
+    {
+      "asset_id": "NCBS0678901234",
+      "state": "North Carolina",
+      "plant": "P02 - Bryson City",
+      "asset_type": "Motor Pump",
+      "status": "Breakdown",
+      "criticality": "High",
+      "location": {"lat": 35.4270, "lon": -83.4485},
+      "rul": 0
+    },
+    {
+      "asset_id": "NDBS2148259407",
+      "state": "North Dakota",
+      "plant": "P02 - Bismarck",
+      "asset_type": "Motor Compressor",
+      "status": "Failure Predicted",
+      "criticality": "Medium",
+      "location": {"lat": 46.8083, "lon": -100.7837},
+      "rul": 650
+    },
+    {
+      "asset_id": "NDBS2526194640",
+      "state": "North Dakota",
+      "plant": "P02 - Bismarck",
+      "asset_type": "Motor Pump",
+      "status": "Breakdown",
+      "criticality": "High",
+      "location": {"lat": 46.8083, "lon": -100.7837},
+      "rul": 0
+    },
+    {
+      "asset_id": "NDBS3098765432",
+      "state": "North Dakota",
+      "plant": "P02 - Bismarck",
+      "asset_type": "Generator",
+      "status": "Working",
+      "criticality": "Low",
+      "location": {"lat": 46.8083, "lon": -100.7837},
+      "rul": 1400
+    },
+    {
+      "asset_id": "NDBS4123456789",
+      "state": "North Dakota",
+      "plant": "P02 - Bismarck",
+      "asset_type": "Motor Fan",
+      "status": "Under Maintenance",
+      "criticality": "Low",
+      "location": {"lat": 46.8083, "lon": -100.7837},
+      "rul": 500
+    },
+    {
+      "asset_id": "NDGF5234567890",
+      "state": "North Dakota",
+      "plant": "P01 - Grand Forks",
+      "asset_type": "Motor Compressor",
+      "status": "Working",
+      "criticality": "Medium",
+      "location": {"lat": 47.9253, "lon": -97.0329},
+      "rul": 1250
+    },
+    {
+      "asset_id": "NDGF6345678901",
+      "state": "North Dakota",
+      "plant": "P01 - Grand Forks",
+      "asset_type": "Motor Pump",
+      "status": "Working",
+      "criticality": "High",
+      "location": {"lat": 47.9253, "lon": -97.0329},
+      "rul": 1150
+    },
+    {
+      "asset_id": "NDGF7456789012",
+      "state": "North Dakota",
+      "plant": "P01 - Grand Forks",
+      "asset_type": "Generator",
+      "status": "Breakdown",
+      "criticality": "Medium",
+      "location": {"lat": 47.9253, "lon": -97.0329},
+      "rul": 0
+    },
+    {
+      "asset_id": "NDGF8567890123",
+      "state": "North Dakota",
+      "plant": "P01 - Grand Forks",
+      "asset_type": "Motor Fan",
+      "status": "Under Maintenance",
+      "criticality": "Low",
+      "location": {"lat": 47.9253, "lon": -97.0329},
+      "rul": 550
+    }
+  ]
+}
+

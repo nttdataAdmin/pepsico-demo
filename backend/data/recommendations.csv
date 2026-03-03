@@ -1,0 +1,12 @@
+year,month,state,plant,asset_id,asset_type,status,criticality,recommendation
+2023,February,North Dakota,P02 - Bismarck,NDBS2148259407,Motor Compressor,Failure Predicted,Low,Investigation Required
+2023,February,Louisiana,P02 - Baton Rouge,ALBR4903786667,Generator,Breakdown,High,Immediate Maintenance Required
+2023,February,Louisiana,P02 - Baton Rouge,ALBR4956922143,Motor Pump,Breakdown,High,Immediate Maintenance Required
+2023,February,California,P01 - San Francisco,CASF1427567615,Motor Pump,Failure Predicted,High,Immediate Maintenance Required
+2023,February,California,P01 - San Francisco,CASF1759317908,Motor Compressor,Working,Medium,No Action Required
+2023,February,North Carolina,P01 - Raleigh,NCRL5809796633,Motor Fan,Breakdown,Medium,Immediate Maintenance Required
+2023,February,North Dakota,P02 - Bismarck,NDBS2526194640,Motor Pump,Breakdown,High,Immediate Maintenance Required
+2023,February,California,P01 - San Francisco,CASF175811708,Motor Compressor,Under Maintenance,High,Maintenance In Progress
+2023,February,North Dakota,P02 - Bismarck,NDBS4123456789,Motor Fan,Under Maintenance,Low,Maintenance In Progress
+2023,February,North Dakota,P01 - Grand Forks,NDGF8567890123,Motor Fan,Under Maintenance,Low,Maintenance In Progress
+

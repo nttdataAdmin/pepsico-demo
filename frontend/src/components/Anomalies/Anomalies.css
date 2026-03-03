@@ -1,0 +1,62 @@
+.anomalies-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.database-indicators-row {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--color-text);
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+.anomalies-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.filters-panel-container {
+  height: fit-content;
+}
+
+.charts-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.chart-wrapper {
+  width: 100%;
+}
+
+@media (max-width: 1200px) {
+  .charts-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  font-size: 18px;
+  color: #666;
+}
+
+@media (max-width: 1200px) {
+  .anomalies-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
