@@ -1,27 +1,16 @@
 {
-  "total_assets": 42,
+  "total_assets": 8,
   "flow": {
     "state": {
-      "California": 12,
-      "Louisiana": 10,
-      "North Carolina": 9,
-      "North Dakota": 6,
-      "New York": 5
+      "Beloit": 4,
+      "Jonesboro": 4
     },
     "plant": {
-      "P01 - San Francisco": 5,
-      "P02 - Bakersfield": 4,
-      "P03 - Los Angeles": 3,
-      "P02 - Baton Rouge": 4,
-      "P01 - Lafayette": 4,
-      "P01 - Albany": 5,
-      "P01 - Raleigh": 4,
-      "P02 - Bryson City": 2,
-      "P02 - Bismarck": 4,
-      "P01 - Grand Forks": 4
+      "P01 - Beloit": 4,
+      "P01 - Jonesboro": 4
     },
     "asset_id": {
-      "CASF1427567615": {
+      "BEL-PUMP-001": {
         "rul_threshold": 700,
         "root_causes": [
           {"cause": "Bearing Misalign", "probability": 0.75},
@@ -29,30 +18,15 @@
           {"cause": "Structural Crack", "probability": 0.07}
         ]
       },
-      "CASF1243678649": {
-        "rul_threshold": 1500,
-        "root_causes": [
-          {"cause": "Normal Wear", "probability": 0.85},
-          {"cause": "Bearing Misalign", "probability": 0.10},
-          {"cause": "Lubrication Issue", "probability": 0.05}
-        ]
-      },
-      "CASF1447361400": {
-        "rul_threshold": 1100,
-        "root_causes": [
-          {"cause": "Normal Wear", "probability": 0.80},
-          {"cause": "Bolt Loosened", "probability": 0.15},
-          {"cause": "Bearing Misalign", "probability": 0.05}
-        ]
-      },
-      "CASF1515865757": {
+      "BEL-COMP-002": {
         "rul_threshold": 1200,
         "root_causes": [
-          {"cause": "Normal Wear", "probability": 0.90},
-          {"cause": "Lubrication Issue", "probability": 0.10}
+          {"cause": "Normal Wear", "probability": 0.82},
+          {"cause": "Bearing Misalign", "probability": 0.12},
+          {"cause": "Lubrication Issue", "probability": 0.06}
         ]
       },
-      "CASF175811708": {
+      "BEL-GEN-003": {
         "rul_threshold": 600,
         "root_causes": [
           {"cause": "Bearing Misalign", "probability": 0.65},
@@ -60,7 +34,15 @@
           {"cause": "Bolt Loosened", "probability": 0.10}
         ]
       },
-      "LABR4903786667": {
+      "BEL-FAN-004": {
+        "rul_threshold": 1500,
+        "root_causes": [
+          {"cause": "Normal Wear", "probability": 0.85},
+          {"cause": "Bearing Misalign", "probability": 0.10},
+          {"cause": "Lubrication Issue", "probability": 0.05}
+        ]
+      },
+      "JON-GEN-001": {
         "rul_threshold": 0,
         "root_causes": [
           {"cause": "Bearing Failure", "probability": 0.60},
@@ -68,7 +50,7 @@
           {"cause": "Bolt Loosened", "probability": 0.10}
         ]
       },
-      "LABR4956922143": {
+      "JON-PUMP-002": {
         "rul_threshold": 0,
         "root_causes": [
           {"cause": "Bearing Failure", "probability": 0.70},
@@ -76,7 +58,7 @@
           {"cause": "Structural Crack", "probability": 0.10}
         ]
       },
-      "NDBS2148259407": {
+      "JON-COMP-003": {
         "rul_threshold": 650,
         "root_causes": [
           {"cause": "Bearing Misalign", "probability": 0.70},
@@ -84,26 +66,18 @@
           {"cause": "Lubrication Issue", "probability": 0.10}
         ]
       },
-      "NDBS2526194640": {
-        "rul_threshold": 0,
+      "JON-FAN-004": {
+        "rul_threshold": 1400,
         "root_causes": [
-          {"cause": "Bearing Failure", "probability": 0.65},
-          {"cause": "Structural Crack", "probability": 0.25},
-          {"cause": "Bolt Loosened", "probability": 0.10}
-        ]
-      },
-      "NCRL5809796633": {
-        "rul_threshold": 0,
-        "root_causes": [
-          {"cause": "Bearing Failure", "probability": 0.55},
-          {"cause": "Bolt Loosened", "probability": 0.30},
-          {"cause": "Structural Crack", "probability": 0.15}
+          {"cause": "Normal Wear", "probability": 0.80},
+          {"cause": "Bearing Misalign", "probability": 0.15},
+          {"cause": "Lubrication Issue", "probability": 0.05}
         ]
       }
     },
     "rul_threshold": {
       "700": {
-        "asset_id": "CASF1427567615",
+        "asset_id": "BEL-PUMP-001",
         "root_causes": [
           {"cause": "Bearing Misalign", "probability": 0.75},
           {"cause": "Bolt Loosened", "probability": 0.18},
@@ -111,7 +85,7 @@
         ]
       },
       "650": {
-        "asset_id": "NDBS2148259407",
+        "asset_id": "JON-COMP-003",
         "root_causes": [
           {"cause": "Bearing Misalign", "probability": 0.70},
           {"cause": "Bolt Loosened", "probability": 0.20},
@@ -119,7 +93,7 @@
         ]
       },
       "600": {
-        "asset_id": "CASF175811708",
+        "asset_id": "BEL-GEN-003",
         "root_causes": [
           {"cause": "Bearing Misalign", "probability": 0.65},
           {"cause": "Structural Crack", "probability": 0.25},
@@ -129,4 +103,3 @@
     }
   }
 }
-

@@ -16,7 +16,7 @@ A comprehensive asset management dashboard for PepsiCo with AI-powered recommend
 - FastAPI
 - Python 3.9+
 - Azure OpenAI integration
-- Pandas for data processing
+- CSV/JSON data loading (no pandas required)
 
 ### Frontend
 - React 18
@@ -57,12 +57,13 @@ AZURE_API_KEY=your-api-key-here
 AZURE_API_VERSION=2024-08-01-preview
 ```
 
-6. Run the backend server:
+6. Run the backend server (use `127.0.0.1` on Windows if `0.0.0.0` fails with a socket permission error):
 ```bash
-uvicorn app.main:app --reload
+# Windows PowerShell (from backend folder)
+.\venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 9898 --reload
 ```
 
-The API will be available at `http://localhost:8000`
+The API will be available at `http://127.0.0.1:9898`. The dev frontend proxies `/api` there via `package.json` → `proxy`.
 
 ### Frontend Setup
 
@@ -76,20 +77,14 @@ cd frontend
 npm install
 ```
 
-3. Create a `.env` file in the frontend directory:
-```
-PORT=6900
-REACT_APP_API_URL=http://localhost:8000
-```
-
-**Important:** The `PORT=6900` line is required to run the frontend on port 6900 instead of the default 3000.
+3. Dev settings are in `.env.development` (port **3002**, API proxied to the backend — do not set `REACT_APP_API_URL` unless you need a direct URL). If webpack fails with `allowedHosts`, `DANGEROUSLY_DISABLE_HOST_CHECK=true` is already set there for local dev.
 
 4. Start the development server:
 ```bash
 npm start
 ```
 
-The application will open at `http://localhost:6900`
+Open **http://localhost:3002** (or whatever `PORT` you set).
 
 ## Project Structure
 

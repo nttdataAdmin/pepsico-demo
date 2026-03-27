@@ -1,7 +1,8 @@
+from typing import Any, Dict, List, Optional
+
 from fastapi import APIRouter, Query
-from typing import Optional, List, Dict, Any
+
 from app.services.data_loader import DataLoader
-import pandas as pd
 
 router = APIRouter(prefix="/api/recommendations", tags=["recommendations"])
 data_loader = DataLoader()
@@ -13,27 +14,25 @@ async def get_recommendations(
     plant: Optional[str] = Query(None, description="Filter by plant"),
     asset_id: Optional[str] = Query(None, description="Filter by asset ID"),
     year: Optional[int] = Query(None, description="Filter by year"),
-    month: Optional[str] = Query(None, description="Filter by month")
+    month: Optional[str] = Query(None, description="Filter by month"),
 ):
     """Get recommendations data"""
-    df = data_loader.load_recommendations()
-    
-    if df.empty:
+    rows: List[Dict[str, Any]] = data_loader.load_recommendations()
+    if not rows:
         return []
-    
-    # Apply filters
-    if state and "state" in df.columns:
-        df = df[df["state"] == state]
-    if plant and "plant" in df.columns:
-        df = df[df["plant"] == plant]
-    if asset_id and "asset_id" in df.columns:
-        df = df[df["asset_id"] == asset_id]
-    if year and "year" in df.columns:
-        df = df[df["year"] == year]
-    if month and "month" in df.columns:
-        df = df[df["month"] == month]
-    
-    # Convert to list of dictionaries
-    result = df.to_dict(orient="records")
-    return result
 
+    def col(name: str) -> bool:
+        return name in rows[0]
+
+    out = rows
+    if state and col("state"):
+        out = [r for r in out if r.get("state") == state]
+    if plant and col("plant"):
+        out = [r for r in out if r.get("plant") == plant]
+    if asset_id and col("asset_id"):
+        out = [r for r in out if r.get("asset_id") == asset_id]
+    if year is not None and col("year"):
+        out = [r for r in out if str(r.get("year", "")) == str(year)]
+    if month and col("month"):
+        out = [r for r in out if r.get("month") == month]
+    return out

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import './Header.css';
 
 const Header = ({ selectedMonth, selectedYear, onMonthChange, onYearChange, filters, onFiltersChange, user, onLogout }) => {
@@ -28,18 +29,9 @@ const Header = ({ selectedMonth, selectedYear, onMonthChange, onYearChange, filt
           </div>
           <div className="header-right">
             <div className="header-links">
-              <a 
-                href="http://155.17.172.33:1789/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="production-link"
-                title="Production line management system System"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 6H6C4.89543 6 4 6.89543 4 8V18C4 19.1046 4.89543 20 6 20H18C19.1046 20 20 19.1046 20 18V8C20 6.89543 19.1046 6 18 6H14M10 6C10 7.10457 10.8954 8 12 8C13.1046 8 14 7.10457 14 6M10 6C10 4.89543 10.8954 4 12 4C13.1046 4 14 4.89543 14 6M9 12H15M9 16H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                Production line management system
-              </a>
+              <Link to="/upload" className="production-link" title="Upload QC form">
+                Upload form
+              </Link>
             </div>
             {user && (
               <div className="user-section">

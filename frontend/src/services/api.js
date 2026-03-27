@@ -1,13 +1,20 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+/**
+ * Empty string = use relative URLs (Create React App dev proxy → package.json "proxy", default 127.0.0.1:9898).
+ * Set REACT_APP_API_URL for production or when not using the proxy.
+ */
+export const API_BASE_URL = (process.env.REACT_APP_API_URL || '').replace(/\/$/, '');
+
+/** Human-readable hint for errors / UI */
+export const API_DISPLAY_URL = API_BASE_URL || '(dev proxy → http://127.0.0.1:9898)';
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_BASE_URL || undefined,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10 second timeout
+  timeout: 60000,
 });
 
 // Add request interceptor for debugging
@@ -29,7 +36,7 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error')) {
-      error.message = 'Cannot connect to backend server. Please ensure it is running on http://localhost:8000';
+      error.message = `Cannot connect to backend (${API_DISPLAY_URL}). Start: cd backend && .\\venv\\Scripts\\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 9898`;
     }
     console.error('API Response Error:', error);
     return Promise.reject(error);
@@ -94,6 +101,15 @@ export const getMaintenanceSchedule = async (filters = {}) => {
   return response.data;
 };
 
+/**
+ * Send a scheduled work-order notification email via backend (Microsoft Graph / MSAL).
+ * @param {object} payload — work order fields; optional to_email overrides server default
+ */
+export const notifyMaintenanceWorkOrder = async (payload) => {
+  const response = await api.post('/api/maintenance/notify-work-order', payload);
+  return response.data;
+};
+
 export const getAIRecommendations = async (requestData) => {
   const response = await api.post('/api/ai/recommendations', requestData);
   return response.data;
@@ -102,5 +118,48 @@ export const getAIRecommendations = async (requestData) => {
 export const getAIAnalysis = async (requestData) => {
   const response = await api.post('/api/ai/analysis', requestData);
   return response.data;
+};
+
+/** All sheets from super_excel.xlsx (via backend). */
+export const getSuperExcel = async () => {
+  const response = await api.get('/api/super-excel');
+  return response.data;
+};
+
+/**
+ * Upload QC form; classification uses filename (demo samples), optional client_hint, optional Azure OCR.
+ * @param {File} file
+ * @param {string} [clientHint] 'go' | 'no_go'
+ */
+export const classifyForm = async (file, clientHint) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (clientHint) formData.append('client_hint', clientHint);
+  const url = API_BASE_URL ? `${API_BASE_URL}/api/forms/classify` : '/api/forms/classify';
+  const controller = new AbortController();
+  const timeoutMs = 120000;
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let res;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      body: formData,
+      signal: controller.signal,
+    });
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      throw new Error('Request timed out. Is the backend running on port 9898?');
+    }
+    throw new Error(
+      `Cannot reach API (${API_DISPLAY_URL}). Start backend on 9898 and restart npm start so the dev proxy applies — ${e.message || e}`
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(t || `Classify failed (${res.status})`);
+  }
+  return res.json();
 };
 

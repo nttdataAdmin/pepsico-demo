@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { getMaintenanceSchedule } from '../../data/mockData';
-import ScheduleTable from './ScheduleTable';
+import MaintenanceEventCards from './MaintenanceEventCards';
+import SelectPlaceGate from '../Layout/SelectPlaceGate';
+import { DataFeedHint, DowntimeSignalsPanel } from '../Agentic/IntegratedDataPanels';
 import './MaintenanceSchedule.css';
 
-const MaintenanceSchedule = ({ selectedMonth, selectedYear, filters }) => {
+const MaintenanceSchedule = ({ selectedMonth, selectedYear, filters, onFiltersChange }) => {
   const [schedule, setSchedule] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -14,30 +17,47 @@ const MaintenanceSchedule = ({ selectedMonth, selectedYear, filters }) => {
   const loadSchedule = () => {
     setLoading(true);
     setTimeout(() => {
-      // Map month abbreviations to full names
       const monthMap = {
-        'Jan': 'January', 'Feb': 'February', 'Mar': 'March', 'Apr': 'April',
-        'May': 'May', 'Jun': 'June', 'Jul': 'July', 'Aug': 'August',
-        'Sep': 'September', 'Oct': 'October', 'Nov': 'November', 'Dec': 'December'
+        Jan: 'January',
+        Feb: 'February',
+        Mar: 'March',
+        Apr: 'April',
+        May: 'May',
+        Jun: 'June',
+        Jul: 'July',
+        Aug: 'August',
+        Sep: 'September',
+        Oct: 'October',
+        Nov: 'November',
+        Dec: 'December',
       };
       const monthName = monthMap[selectedMonth] || selectedMonth;
-      
       const filterParams = {
         year: selectedYear,
         ...filters,
       };
-      
-      // Only add month filter if we have a valid month name
       if (monthName && monthName !== selectedMonth) {
         filterParams.month = monthName;
       }
-      
       const data = getMaintenanceSchedule(filterParams);
-      console.log('Loaded maintenance schedule:', data.length, 'with filters:', filterParams);
       setSchedule(data);
       setLoading(false);
     }, 300);
   };
+
+  if (!filters.state) {
+    return (
+      <div className="maintenance-schedule-page">
+        <h2 className="page-title">Planned Downtime</h2>
+        <SelectPlaceGate
+          filters={filters}
+          onFiltersChange={onFiltersChange}
+          title="Select a location for planned downtime"
+          hint="Downtime narratives and work orders are scoped to the selected site. Pick Beloit or Jonesboro to load this step."
+        />
+      </div>
+    );
+  }
 
   if (loading) {
     return <div className="loading">Loading...</div>;
@@ -45,11 +65,37 @@ const MaintenanceSchedule = ({ selectedMonth, selectedYear, filters }) => {
 
   return (
     <div className="maintenance-schedule-page">
-      <h2 className="page-title">MAINTENANCE SCHEDULE</h2>
-      <ScheduleTable schedule={schedule} />
+      <h2 className="page-title">Planned Downtime</h2>
+      <p className="agentic-section-intro">
+        Planned downtime and other OEE-impacting events are summarized first; scheduled work orders follow so crews see
+        recent loss events and what is scheduled to restore capability.
+      </p>
+
+      <DataFeedHint />
+      <h3 className="maint-section-label">Downtime & loss narrative</h3>
+      <DowntimeSignalsPanel />
+
+      <h3 className="maint-section-label">Scheduled work orders</h3>
+      <MaintenanceEventCards schedule={schedule} />
+
+      <section className="maintenance-story-close" aria-labelledby="maintenance-story-close-title">
+        <h3 id="maintenance-story-close-title">End</h3>
+        <p>
+          You have walked the narrative from executive context through anomalies, root cause, actions, and planned
+          downtime for the selected site. Use executive summary to compare another region, or start a fresh package
+          quality cycle when new field data arrives.
+        </p>
+        <div className="maintenance-story-close-actions">
+          <Link to="/executive-summary" className="maintenance-story-close-link">
+            Back to executive summary
+          </Link>
+          <Link to="/upload" className="maintenance-story-close-link maintenance-story-close-link--secondary">
+            Upload new form
+          </Link>
+        </div>
+      </section>
     </div>
   );
 };
 
 export default MaintenanceSchedule;
-

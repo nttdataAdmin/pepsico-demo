@@ -4,6 +4,30 @@
   gap: 15px;
 }
 
+.asset-status-summary--horizontal {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: stretch;
+  align-items: stretch;
+}
+
+.asset-status-summary--horizontal .status-card {
+  flex: 1 1 120px;
+  min-width: 100px;
+  max-width: 100%;
+  padding: 14px 12px;
+}
+
+.asset-status-summary--horizontal .status-value {
+  font-size: 26px;
+}
+
+.asset-status-summary--horizontal .status-label {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
 .status-card {
   padding: 20px;
   border-radius: 8px;

@@ -1,29 +1,20 @@
 import React, { useState } from 'react';
+import { SITE_LOCATIONS } from '../../config/siteLocations';
 import './FiltersPanel.css';
+
+const PLANTS = ['P01 - Beloit', 'P01 - Jonesboro'];
 
 const FiltersPanel = ({ filters, onFiltersChange }) => {
   const [searchState, setSearchState] = useState('');
   const [searchPlant, setSearchPlant] = useState('');
   const [searchAssetId, setSearchAssetId] = useState('');
 
-  const states = ['California', 'Louisiana', 'New York', 'North Carolina', 'North Dakota'];
-  const plants = [
-    'P01 - San Francisco',
-    'P02 - Bakersfield',
-    'P03 - Los Angeles',
-    'P02 - Baton Rouge',
-    'P01 - Lafayette',
-    'P01 - Albany',
-    'P01 - Raleigh',
-    'P02 - Bryson City',
-    'P02 - Bismarck',
-    'P01 - Grand Forks',
-  ];
+  const states = SITE_LOCATIONS;
 
   const filteredStates = states.filter((state) =>
     state.toLowerCase().includes(searchState.toLowerCase())
   );
-  const filteredPlants = plants.filter((plant) =>
+  const filteredPlants = PLANTS.filter((plant) =>
     plant.toLowerCase().includes(searchPlant.toLowerCase())
   );
 
@@ -32,7 +23,7 @@ const FiltersPanel = ({ filters, onFiltersChange }) => {
       <div className="filters-title">FILTERS</div>
 
       <div className="filter-section">
-        <div className="filter-label">State</div>
+        <div className="filter-label">Location</div>
         <div className="search-box">
           <input
             type="text"

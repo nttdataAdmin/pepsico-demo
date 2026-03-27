@@ -1,46 +1,46 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/Login/Login';
-import NavBar from './components/Layout/NavBar';
+import DashboardStepNav from './components/Layout/DashboardStepNav';
 import Header from './components/Layout/Header';
 import ExecutiveSummary from './components/ExecutiveSummary/ExecutiveSummary';
 import Anomalies from './components/Anomalies/Anomalies';
 import RootCauseAnalysis from './components/RootCauseAnalysis/RootCauseAnalysis';
 import Recommendations from './components/Recommendations/Recommendations';
 import MaintenanceSchedule from './components/MaintenanceSchedule/MaintenanceSchedule';
+import FormUpload from './components/FormUpload/FormUpload';
+import { AppFlowProvider, useAppFlow } from './context/AppFlowContext';
 import './App.css';
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
+function HomeRedirect() {
+  const { flow } = useAppFlow();
+  if (!flow.outcome) return <Navigate to="/upload" replace />;
+  if (flow.outcome === 'go' && !flow.fullDashboard) {
+    return <Navigate to="/upload" replace />;
+  }
+  return <Navigate to="/executive-summary" replace />;
+}
+
+function RequireDashboard({ children }) {
+  const { flow } = useAppFlow();
+  if (flow.outcome === 'go' && !flow.fullDashboard) {
+    return <Navigate to="/upload" replace />;
+  }
+  return children;
+}
+
+function AuthenticatedShell({ user, onLogout }) {
+  const { showNavBar } = useAppFlow();
   const [selectedMonth, setSelectedMonth] = useState('Feb');
   const [selectedYear, setSelectedYear] = useState(2023);
   const [filters, setFilters] = useState({
     state: null,
     plant: null,
-    asset_id: null
+    asset_id: null,
   });
 
-  const handleLogin = (userData) => {
-    setUser(userData);
-    setIsAuthenticated(true);
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setUser(null);
-  };
-
-  if (!isAuthenticated) {
-    return <Login onLogin={handleLogin} />;
-  }
-
   const backgroundImageUrl = `${process.env.PUBLIC_URL}/backgroundf.PNG`;
-  
-  const appBgStyle = {
-    position: 'relative'
-  };
-
+  const appBgStyle = { position: 'relative' };
   const bgOverlayStyle = {
     position: 'fixed',
     top: 0,
@@ -54,14 +54,14 @@ function App() {
     backgroundAttachment: 'fixed',
     opacity: 0.12,
     pointerEvents: 'none',
-    zIndex: 0
+    zIndex: 0,
   };
 
   return (
     <Router>
       <div className="App" style={appBgStyle}>
-        <div style={bgOverlayStyle}></div>
-        <Header 
+        <div style={bgOverlayStyle} />
+        <Header
           selectedMonth={selectedMonth}
           selectedYear={selectedYear}
           onMonthChange={setSelectedMonth}
@@ -69,69 +69,113 @@ function App() {
           filters={filters}
           onFiltersChange={setFilters}
           user={user}
-          onLogout={handleLogout}
+          onLogout={onLogout}
         />
-        <div className="main-content">
+        {showNavBar ? <DashboardStepNav /> : null}
+        <div className={`main-content ${showNavBar ? 'main-content--step-nav' : ''}`}>
           <Routes>
-            <Route path="/" element={<Navigate to="/executive-summary" replace />} />
-            <Route 
-              path="/executive-summary" 
+            <Route path="/upload" element={<FormUpload onLogout={onLogout} />} />
+            <Route path="/" element={<HomeRedirect />} />
+            <Route
+              path="/executive-summary"
               element={
-                <ExecutiveSummary 
-                  selectedMonth={selectedMonth}
-                  selectedYear={selectedYear}
-                  filters={filters}
-                  onFiltersChange={setFilters}
-                />
-              } 
+                <RequireDashboard>
+                  <ExecutiveSummary
+                    selectedMonth={selectedMonth}
+                    selectedYear={selectedYear}
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                  />
+                </RequireDashboard>
+              }
             />
-            <Route 
-              path="/anomalies" 
+            <Route
+              path="/anomalies"
               element={
-                <Anomalies 
-                  selectedMonth={selectedMonth}
-                  selectedYear={selectedYear}
-                  filters={filters}
-                />
-              } 
+                <RequireDashboard>
+                  <Anomalies
+                    selectedMonth={selectedMonth}
+                    selectedYear={selectedYear}
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                  />
+                </RequireDashboard>
+              }
             />
-            <Route 
-              path="/root-cause" 
+            <Route
+              path="/root-cause"
               element={
-                <RootCauseAnalysis 
-                  selectedMonth={selectedMonth}
-                  selectedYear={selectedYear}
-                  filters={filters}
-                />
-              } 
+                <RequireDashboard>
+                  <RootCauseAnalysis
+                    selectedMonth={selectedMonth}
+                    selectedYear={selectedYear}
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                  />
+                </RequireDashboard>
+              }
             />
-            <Route 
-              path="/recommendations" 
+            <Route
+              path="/recommendations"
               element={
-                <Recommendations 
-                  selectedMonth={selectedMonth}
-                  selectedYear={selectedYear}
-                  filters={filters}
-                />
-              } 
+                <RequireDashboard>
+                  <Recommendations
+                    selectedMonth={selectedMonth}
+                    selectedYear={selectedYear}
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                  />
+                </RequireDashboard>
+              }
             />
-            <Route 
-              path="/maintenance" 
+            <Route
+              path="/maintenance"
               element={
-                <MaintenanceSchedule 
-                  selectedMonth={selectedMonth}
-                  selectedYear={selectedYear}
-                  filters={filters}
-                />
-              } 
+                <RequireDashboard>
+                  <MaintenanceSchedule
+                    selectedMonth={selectedMonth}
+                    selectedYear={selectedYear}
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                  />
+                </RequireDashboard>
+              }
             />
           </Routes>
         </div>
-        <NavBar />
       </div>
     </Router>
   );
 }
 
-export default App;
+function AppInner() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+  const { clearFlow, setFlow } = useAppFlow();
 
+  const handleLogin = (userData) => {
+    setFlow({ outcome: null, fullDashboard: false });
+    setUser(userData);
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    clearFlow();
+    setUser(null);
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} />;
+  }
+
+  return <AuthenticatedShell user={user} onLogout={handleLogout} />;
+}
+
+export default function App() {
+  return (
+    <AppFlowProvider>
+      <AppInner />
+    </AppFlowProvider>
+  );
+}

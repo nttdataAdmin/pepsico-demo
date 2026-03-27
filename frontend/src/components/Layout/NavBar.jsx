@@ -11,7 +11,7 @@ const NavBar = () => {
     { path: '/anomalies', label: 'Anomalies' },
     { path: '/root-cause', label: 'Root Cause Analysis' },
     { path: '/recommendations', label: 'Recommendations' },
-    { path: '/maintenance', label: 'Maintenance Schedule' },
+    { path: '/maintenance', label: 'Planned Downtime' },
   ];
 
   return (

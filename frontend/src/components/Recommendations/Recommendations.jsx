@@ -1,31 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { getRecommendations } from '../../data/mockData';
-import { getAssetsFiltered } from '../../data/mockData';
+import { getRecommendations, getAssetsFiltered } from '../../data/mockData';
 import { getAIRecommendation } from '../../services/aiService';
-import RecommendationsTable from './RecommendationsTable';
+import RecommendationActionCards from './RecommendationActionCards';
+import SelectPlaceGate from '../Layout/SelectPlaceGate';
+import { DataFeedHint, OperationalActionsPanel } from '../Agentic/IntegratedDataPanels';
 import './Recommendations.css';
 
-const Recommendations = ({ selectedMonth, selectedYear, filters }) => {
+const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange }) => {
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [aiRecommendation, setAiRecommendation] = useState(null);
   const [loadingAI, setLoadingAI] = useState(false);
-  const [aiRecommendations, setAiRecommendations] = useState({}); // Store AI recs by asset_id
+  const [aiRecommendations, setAiRecommendations] = useState({});
 
   useEffect(() => {
     loadRecommendations();
   }, [selectedMonth, selectedYear, filters]);
 
   useEffect(() => {
-    // Generate AI recommendations when filters change (debounced)
     const timer = setTimeout(() => {
-      const hasFilters = Object.keys(filters).some(key => filters[key]);
+      const hasFilters = Object.keys(filters).some((key) => filters[key]);
       if (hasFilters) {
-        console.log('Filters changed, generating AI recommendations...', filters);
         generateAIRecommendationsForFiltered();
       }
     }, 1000);
-    
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, selectedMonth, selectedYear]);
@@ -33,26 +31,29 @@ const Recommendations = ({ selectedMonth, selectedYear, filters }) => {
   const loadRecommendations = () => {
     setLoading(true);
     setTimeout(() => {
-      // Map month abbreviations to full names
       const monthMap = {
-        'Jan': 'January', 'Feb': 'February', 'Mar': 'March', 'Apr': 'April',
-        'May': 'May', 'Jun': 'June', 'Jul': 'July', 'Aug': 'August',
-        'Sep': 'September', 'Oct': 'October', 'Nov': 'November', 'Dec': 'December'
+        Jan: 'January',
+        Feb: 'February',
+        Mar: 'March',
+        Apr: 'April',
+        May: 'May',
+        Jun: 'June',
+        Jul: 'July',
+        Aug: 'August',
+        Sep: 'September',
+        Oct: 'October',
+        Nov: 'November',
+        Dec: 'December',
       };
       const monthName = monthMap[selectedMonth] || selectedMonth;
-      
       const filterParams = {
         year: selectedYear,
         ...filters,
       };
-      
-      // Only add month filter if we have a valid month name
       if (monthName && monthName !== selectedMonth) {
         filterParams.month = monthName;
       }
-      
       const data = getRecommendations(filterParams);
-      console.log('Loaded recommendations:', data.length, 'with filters:', filterParams, 'month:', monthName);
       setRecommendations(data);
       setLoading(false);
     }, 300);
@@ -61,37 +62,28 @@ const Recommendations = ({ selectedMonth, selectedYear, filters }) => {
   const generateAIRecommendationsForFiltered = async () => {
     const filteredAssets = getAssetsFiltered(filters);
     const newAIRecommendations = {};
-    
-    console.log(`Generating AI recommendations for ${filteredAssets.length} filtered assets`);
-    
-    // Generate AI recommendations for filtered assets (limit to 3 to avoid too many API calls)
     for (const asset of filteredAssets.slice(0, 3)) {
       try {
-        console.log(`Calling AI for asset: ${asset.asset_id}`);
         const recommendation = await getAIRecommendation({
           ...asset,
           month: selectedMonth,
           year: selectedYear,
           filterContext: filters,
-          timestamp: new Date().toISOString() // Add timestamp for variety
+          timestamp: new Date().toISOString(),
         });
         newAIRecommendations[asset.asset_id] = recommendation;
-        console.log(`AI recommendation received for ${asset.asset_id}`);
-      } catch (error) {
-        console.error(`Error getting AI recommendation for ${asset.asset_id}:`, error);
+      } catch {
+        /* non-blocking */
       }
     }
-    
-    setAiRecommendations(prev => ({ ...prev, ...newAIRecommendations }));
+    setAiRecommendations((prev) => ({ ...prev, ...newAIRecommendations }));
   };
 
   const handleGetAIRecommendation = async (assetId) => {
-    // Check if we already have an AI recommendation for this asset
     if (aiRecommendations[assetId]) {
       setAiRecommendation(aiRecommendations[assetId]);
       return;
     }
-
     setLoadingAI(true);
     try {
       const assets = getAssetsFiltered({ asset_id: assetId });
@@ -100,17 +92,30 @@ const Recommendations = ({ selectedMonth, selectedYear, filters }) => {
         ...assetData,
         month: selectedMonth,
         year: selectedYear,
-        filterContext: filters
+        filterContext: filters,
       });
       setAiRecommendation(recommendation);
-      setAiRecommendations(prev => ({ ...prev, [assetId]: recommendation }));
-    } catch (error) {
-      console.error('Error getting AI recommendation:', error);
-      setAiRecommendation('Unable to generate AI recommendation at this time. Please try again.');
+      setAiRecommendations((prev) => ({ ...prev, [assetId]: recommendation }));
+    } catch {
+      setAiRecommendation('Guidance could not be synthesized. Retry shortly.');
     } finally {
       setLoadingAI(false);
     }
   };
+
+  if (!filters.state) {
+    return (
+      <div className="recommendations-page">
+        <h2 className="page-title">Prioritized actions</h2>
+        <SelectPlaceGate
+          filters={filters}
+          onFiltersChange={onFiltersChange}
+          title="Select a location for recommendations"
+          hint="Actions and asset guidance are filtered by site. Choose Beloit or Jonesboro to load the recommendation queue for this step."
+        />
+      </div>
+    );
+  }
 
   if (loading) {
     return <div className="loading">Loading...</div>;
@@ -118,8 +123,18 @@ const Recommendations = ({ selectedMonth, selectedYear, filters }) => {
 
   return (
     <div className="recommendations-page">
-      <h2 className="page-title">RECOMMENDATIONS</h2>
-      <RecommendationsTable 
+      <h2 className="page-title">Prioritized actions</h2>
+      <p className="agentic-section-intro">
+        Countermeasures are ranked from fused reliability, safety, and throughput signals. Open synthesized
+        guidance per asset when you need step-by-step execution detail—without leaving this view.
+      </p>
+
+      <DataFeedHint />
+      <h3 className="rec-section-label">Cross-system action queue</h3>
+      <OperationalActionsPanel />
+
+      <h3 className="rec-section-label">Asset-specific guidance</h3>
+      <RecommendationActionCards
         recommendations={recommendations}
         onGetAIRecommendation={handleGetAIRecommendation}
         loadingAI={loadingAI}
@@ -127,9 +142,23 @@ const Recommendations = ({ selectedMonth, selectedYear, filters }) => {
         aiRecommendations={aiRecommendations}
         onClosePopup={() => setAiRecommendation(null)}
       />
+
+      <div className="rec-legend">
+        <div className="rec-legend-item">
+          <span className="rec-legend-swatch" style={{ backgroundColor: 'var(--color-breakdown)' }} />
+          <span>Breakdown</span>
+        </div>
+        <div className="rec-legend-item">
+          <span className="rec-legend-swatch" style={{ backgroundColor: 'var(--color-failure-predicted)' }} />
+          <span>Failure predicted</span>
+        </div>
+        <div className="rec-legend-item">
+          <span className="rec-legend-swatch" style={{ backgroundColor: 'var(--color-under-maintenance)' }} />
+          <span>Under maintenance</span>
+        </div>
+      </div>
     </div>
   );
 };
 
 export default Recommendations;
-

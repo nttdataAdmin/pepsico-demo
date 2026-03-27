@@ -1,15 +1,32 @@
 .root-cause-page {
   max-width: 1400px;
   margin: 0 auto;
+  padding: 20px;
 }
 
 .page-title {
   font-size: 24px;
   font-weight: 700;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   color: var(--color-text);
   text-align: center;
   letter-spacing: 1px;
+}
+
+.rca-subheading {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #002a5e;
+  margin: 1.25rem 0 0.65rem;
+}
+
+.rca-threshold-deck {
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
 }
 
 .loading {

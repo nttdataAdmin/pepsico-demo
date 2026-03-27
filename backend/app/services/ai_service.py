@@ -1,7 +1,12 @@
-from openai import AzureOpenAI
-from typing import Dict, Any, Optional
-from app.config import settings
 import json
+import logging
+from typing import Any, Dict, List, Optional
+
+from openai import AzureOpenAI
+
+from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class AIService:
@@ -114,4 +119,56 @@ Format your response as a professional analysis report."""
             return response.choices[0].message.content
         except Exception as e:
             return f"Unable to generate AI analysis: {str(e)}"
+
+    def generate_work_order_narrative(
+        self,
+        work_order: Dict[str, Any],
+        asset_context: Optional[Dict[str, Any]] = None,
+        recent_anomalies: Optional[List[Dict[str, Any]]] = None,
+    ) -> Optional[str]:
+        """
+        Short operational summary for a maintenance work-order email (what it means, context, next steps).
+        Returns None if Azure OpenAI is not configured or the call fails (caller sends template-only mail).
+        """
+        if not self.client:
+            return None
+
+        payload = {
+            "scheduled_work_order": work_order,
+            "asset_record": asset_context,
+            "recent_condition_rows_sample": (recent_anomalies or [])[:8],
+        }
+        prompt = f"""You are writing the body section of an internal maintenance notification email for PepsiCo operations.
+
+Use ONLY the JSON facts below. Do not invent asset IDs, dates, or sensor values not present in the data.
+If anomaly or asset details are missing or empty, say what is unknown briefly and still give useful generic guidance for this type of maintenance.
+
+JSON context:
+{json.dumps(payload, indent=2)}
+
+Write a clear email-ready section with these headings (use plain text, no markdown):
+1) What this is — one short paragraph on what this scheduled work order is and why it matters.
+2) What we know — bullet lines from the work order and asset/anomaly data (paraphrase; do not dump raw JSON).
+3) Recommended actions — 2–4 concrete next steps for the recipient.
+
+Keep total length under 280 words. Professional, direct tone."""
+
+        try:
+            response = self.client.chat.completions.create(
+                model=self.deployment,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a maintenance operations writer for PepsiCo. Be accurate and concise.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.5,
+                max_tokens=700,
+            )
+            text = (response.choices[0].message.content or "").strip()
+            return text or None
+        except Exception as e:
+            logger.warning("Work order narrative LLM failed: %s", e)
+            return None
 

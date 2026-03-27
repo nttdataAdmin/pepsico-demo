@@ -44,13 +44,12 @@ async def get_ai_analysis(request: AnalysisRequest):
     
     asset_data = assets[0]
     
-    # Get related data for context
     anomalies = data_loader.load_anomalies()
-    asset_anomalies = anomalies[anomalies.get("asset_id", "") == request.asset_id] if not anomalies.empty else None
-    
+    asset_anomalies = [r for r in anomalies if r.get("asset_id") == request.asset_id]
+
     historical_data = request.historical_data or {}
-    if not asset_anomalies.empty:
-        historical_data["anomalies"] = asset_anomalies.to_dict(orient="records")
+    if asset_anomalies:
+        historical_data["anomalies"] = asset_anomalies
     
     # Generate analysis
     analysis = ai_service.generate_analysis(

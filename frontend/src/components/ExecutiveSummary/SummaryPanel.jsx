@@ -5,48 +5,59 @@ import './SummaryPanel.css';
 const SummaryPanel = ({ assets, selectedMonth, selectedYear }) => {
   const chartData = useMemo(() => {
     const statusCounts = {
-      'Breakdown': 0,
+      Breakdown: 0,
       'Failure Predicted': 0,
       'Under Maintenance': 0,
     };
 
     assets.forEach((asset) => {
-      if (asset.status === 'Breakdown') statusCounts['Breakdown']++;
+      if (asset.status === 'Breakdown') statusCounts.Breakdown++;
       else if (asset.status === 'Failure Predicted') statusCounts['Failure Predicted']++;
       else if (asset.status === 'Under Maintenance') statusCounts['Under Maintenance']++;
     });
 
     return [
-      { name: selectedMonth, Breakdown: statusCounts['Breakdown'], 'Failure Predicted': statusCounts['Failure Predicted'], 'Under Maintenance': statusCounts['Under Maintenance'] }
+      {
+        name: selectedMonth,
+        Breakdown: statusCounts.Breakdown,
+        'Failure Predicted': statusCounts['Failure Predicted'],
+        'Under Maintenance': statusCounts['Under Maintenance'],
+      },
     ];
   }, [assets, selectedMonth]);
 
-  const tableData = useMemo(() => {
+  const exceptionAssets = useMemo(() => {
     return assets
-      .filter((asset) => 
-        asset.status === 'Breakdown' || 
-        asset.status === 'Failure Predicted' || 
-        asset.status === 'Under Maintenance'
+      .filter(
+        (asset) =>
+          asset.status === 'Breakdown' ||
+          asset.status === 'Failure Predicted' ||
+          asset.status === 'Under Maintenance'
       )
       .slice(0, 10);
   }, [assets]);
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Working': return 'var(--color-working)';
-      case 'Failure Predicted': return 'var(--color-failure-predicted)';
-      case 'Under Maintenance': return 'var(--color-under-maintenance)';
-      case 'Breakdown': return 'var(--color-breakdown)';
-      default: return '#ccc';
+      case 'Working':
+        return 'var(--color-working)';
+      case 'Failure Predicted':
+        return 'var(--color-failure-predicted)';
+      case 'Under Maintenance':
+        return 'var(--color-under-maintenance)';
+      case 'Breakdown':
+        return 'var(--color-breakdown)';
+      default:
+        return '#ccc';
     }
   };
 
   return (
     <div className="summary-panel">
-      <div className="card">
-        <div className="card-title">SUMMARY</div>
+      <div className="summary-panel-inner">
+        <div className="card-title">Fleet exceptions · {selectedYear}</div>
         <div className="search-bar">
-          <input type="text" placeholder="Search" className="search-input" />
+          <input type="text" placeholder="Filter by plant or asset…" className="search-input" />
         </div>
         <div className="chart-container">
           <ResponsiveContainer width="100%" height={200}>
@@ -61,32 +72,24 @@ const SummaryPanel = ({ assets, selectedMonth, selectedYear }) => {
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div className="asset-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Plant</th>
-                <th>Asset type</th>
-                <th>Asset ID</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tableData.map((asset, index) => (
-                <tr key={index}>
-                  <td>{asset.plant}</td>
-                  <td>{asset.asset_type}</td>
-                  <td>
-                    <span 
-                      className="asset-id-badge"
-                      style={{ backgroundColor: getStatusColor(asset.status) }}
-                    >
-                      {asset.asset_id}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="exception-stack">
+          {exceptionAssets.length === 0 ? (
+            <p className="exception-empty">No open exceptions in this scope.</p>
+          ) : (
+            exceptionAssets.map((asset) => (
+              <div key={asset.asset_id} className="exception-row">
+                <span className="exception-status" style={{ backgroundColor: getStatusColor(asset.status) }}>
+                  {asset.status}
+                </span>
+                <div className="exception-body">
+                  <strong>{asset.asset_id}</strong>
+                  <span className="exception-meta">
+                    {asset.plant} · {asset.asset_type}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
@@ -94,4 +97,3 @@ const SummaryPanel = ({ assets, selectedMonth, selectedYear }) => {
 };
 
 export default SummaryPanel;
-

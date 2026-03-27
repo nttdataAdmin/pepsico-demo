@@ -71,10 +71,10 @@ const MapView = ({ assets, selectedState, summary }) => {
 
   // Calculate center of all locations for map view
   const calculateCenter = () => {
-    if (locationData.length === 0) return [39.8283, -98.5795]; // Center of US
+    if (locationData.length === 0) return [39.17, -89.62]; // Between Beloit WI & Jonesboro AR
     
-    const avgLat = locationData.reduce((sum, loc) => sum + (loc.location?.lat || 39.8283), 0) / locationData.length;
-    const avgLon = locationData.reduce((sum, loc) => sum + (loc.location?.lon || -98.5795), 0) / locationData.length;
+    const avgLat = locationData.reduce((sum, loc) => sum + (loc.location?.lat || 39.17), 0) / locationData.length;
+    const avgLon = locationData.reduce((sum, loc) => sum + (loc.location?.lon || -89.62), 0) / locationData.length;
     return [avgLat, avgLon];
   };
 
@@ -83,7 +83,7 @@ const MapView = ({ assets, selectedState, summary }) => {
       <div className="map-container">
         <MapContainer
           center={calculateCenter()}
-          zoom={4}
+          zoom={locationData.length <= 2 ? 5 : 4}
           style={{ height: '500px', width: '100%', borderRadius: '8px' }}
           scrollWheelZoom={true}
         >

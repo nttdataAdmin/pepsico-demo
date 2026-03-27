@@ -1,7 +1,7 @@
 import React from 'react';
 import './AssetStatusSummary.css';
 
-const AssetStatusSummary = ({ summary }) => {
+const AssetStatusSummary = ({ summary, layout = 'vertical' }) => {
   if (!summary) return null;
 
   const statusItems = [
@@ -13,7 +13,9 @@ const AssetStatusSummary = ({ summary }) => {
   ];
 
   return (
-    <div className="asset-status-summary">
+    <div
+      className={`asset-status-summary ${layout === 'horizontal' ? 'asset-status-summary--horizontal' : ''}`}
+    >
       {statusItems.map((item) => (
         <div key={item.label} className={`status-card status-${item.color}`}>
           <div className="status-value">{item.value}</div>

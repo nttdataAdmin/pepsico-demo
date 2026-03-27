@@ -2,6 +2,7 @@
   "name": "pepsico-management-dashboard",
   "version": "1.0.0",
   "private": true,
+  "proxy": "http://127.0.0.1:9898",
   "dependencies": {
     "axios": "^1.6.2",
     "leaflet": "^1.9.4",
@@ -19,7 +20,8 @@
     "eject": "react-scripts eject"
   },
   "devDependencies": {
-    "react-scripts": "5.0.1"
+    "react-scripts": "5.0.1",
+    "xlsx": "^0.18.5"
   },
   "eslintConfig": {
     "extends": [

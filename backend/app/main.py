@@ -1,14 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.routes import assets, anomalies, root_cause, recommendations, ai, maintenance
+from app.api.routes import assets, anomalies, root_cause, recommendations, ai, maintenance, super_excel, forms
 
 app = FastAPI(title="PEPSICO MANAGEMENT SYSTEM API", version="1.0.0")
 
-# Configure CORS
+# CORS: do not use allow_credentials=True with allow_origins=["*"] — browsers reject that combo (shows as "Failed to fetch").
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # React dev servers
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -20,6 +20,8 @@ app.include_router(root_cause.router)
 app.include_router(recommendations.router)
 app.include_router(ai.router)
 app.include_router(maintenance.router)
+app.include_router(super_excel.router)
+app.include_router(forms.router)
 
 
 @app.get("/")

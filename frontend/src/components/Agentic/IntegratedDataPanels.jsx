@@ -1,0 +1,266 @@
+import React, { useMemo } from 'react';
+import { useAppFlow } from '../../context/AppFlowContext';
+import {
+  buildExecutiveStreams,
+  buildAnomalySignals,
+  buildActionItems,
+  buildDowntimeEvents,
+} from '../../utils/agenticSynthesis';
+import { buildRcaCorroborationPanelModel } from '../../utils/rcaCorroborationModel';
+import './IntegratedDataPanels.css';
+
+export function DataFeedHint() {
+  const { excelLoading, excelError, excelBundle } = useAppFlow();
+  if (excelLoading && !excelBundle) {
+    return <p className="agentic-feed-hint">Synchronizing cross-system operational feeds…</p>;
+  }
+  if (excelError && !excelBundle) {
+    return (
+      <p className="agentic-feed-hint agentic-feed-hint--error">
+        Integration service unavailable. Fleet and telemetry views still load from the asset registry; fused
+        narratives will appear when connectivity is restored.
+      </p>
+    );
+  }
+  return null;
+}
+
+export function ExecutiveLandingStreams() {
+  const { excelBundle } = useAppFlow();
+  const tables = useMemo(() => buildExecutiveStreams(excelBundle || {}), [excelBundle]);
+
+  if (!tables.length) {
+    return (
+      <p className="agentic-empty">
+        Supplemental workforce, process, and waste narratives will appear here as the assessment agent merges
+        MES, labor, and loss signals with the map above.
+      </p>
+    );
+  }
+
+  return (
+    <div className="agentic-stream-stack">
+      {tables.map((t) => (
+        <section key={t.key} className="agentic-stream agentic-stream--tabular">
+          <h3>{t.title}</h3>
+          <div className="agentic-table-wrap">
+            <table className="agentic-data-table">
+              <thead>
+                <tr>
+                  {t.columns.map((col) => (
+                    <th key={col} scope="col">
+                      {col}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {t.rows.map((row, ri) => (
+                  <tr key={ri}>
+                    {t.columns.map((col) => {
+                      const v = row[col];
+                      const show = v != null && String(v).trim() !== '';
+                      return (
+                        <td key={col} className={show ? undefined : 'agentic-data-table__empty'}>
+                          {show ? v : '\u00a0'}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+export function AnomalySignalsPanel() {
+  const { excelBundle } = useAppFlow();
+  const signals = useMemo(() => buildAnomalySignals(excelBundle || {}), [excelBundle]);
+
+  if (!signals.length) {
+    return (
+      <p className="agentic-empty">
+        Production-line stop and KPI-trigger narratives will populate when line historians and alarm metadata
+        are fused for this scope. Use the live telemetry strips below for raw condition traces.
+      </p>
+    );
+  }
+
+  return (
+    <div className="agentic-signals">
+      {signals.map((s) => (
+        <article key={s.id} className="agentic-signal-card">
+          <div className="agentic-signal-kicker">Production line</div>
+          <h4>{s.productionLine}</h4>
+          <p className="agentic-signal-body">{s.stopStory}</p>
+          <p className="agentic-signal-meta">
+            <strong>KPI / trigger:</strong> {s.kpiSignal}
+            <br />
+            <strong>Downstream:</strong> {s.recommendationHook}
+          </p>
+          {s.detail ? <p className="agentic-signal-meta">{s.detail}</p> : null}
+        </article>
+      ))}
+    </div>
+  );
+}
+
+export function RcaCorroborationPanel({ model: modelProp = null }) {
+  const { excelBundle } = useAppFlow();
+  const model = useMemo(
+    () => modelProp || buildRcaCorroborationPanelModel(excelBundle || {}, null),
+    [modelProp, excelBundle]
+  );
+
+  const maxPareto = Math.max(...model.pareto.map((p) => p.pct), 1);
+
+  return (
+    <div className="rca-corroboration-dashboard">
+      <div className="rca-corr-grid">
+        <section className="rca-corr-card" aria-labelledby="rca-pareto-title">
+          <h4 id="rca-pareto-title" className="rca-corr-card-title">
+            Pareto · loss drivers
+          </h4>
+          <p className="rca-corr-card-lead">
+            Ranked contributors for this scope—aligns with the probability column once you lock an asset.
+          </p>
+          <ul className="rca-pareto-list">
+            {model.pareto.map((row) => (
+              <li key={row.label} className="rca-pareto-row">
+                <div className="rca-pareto-row-head">
+                  <span className="rca-pareto-label">{row.label}</span>
+                  <span className="rca-pareto-pct">{row.pct}%</span>
+                </div>
+                <div className="rca-pareto-track">
+                  <div className="rca-pareto-fill" style={{ width: `${(row.pct / maxPareto) * 100}%` }} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="rca-corr-card" aria-labelledby="rca-5why-title">
+          <h4 id="rca-5why-title" className="rca-corr-card-title">
+            Five-whys thread
+          </h4>
+          <p className="rca-corr-card-lead">
+            Structured drill from observation to systemic barrier—merged with routed RCA rows when present.
+          </p>
+          <ol className="rca-fivewhys">
+            {model.fiveWhys.map((w) => (
+              <li key={w.i} className="rca-fivewhys-item">
+                <span className="rca-fivewhys-n">{w.i}</span>
+                <div className="rca-fivewhys-body">
+                  <strong className="rca-fivewhys-q">{w.q}</strong>
+                  <p className="rca-fivewhys-a">{w.a}</p>
+                  <span className="rca-fivewhys-ev">{w.evidence}</span>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="rca-corr-card rca-corr-card--tree" aria-labelledby="rca-tree-title">
+          <h4 id="rca-tree-title" className="rca-corr-card-title">
+            Equipment tree
+          </h4>
+          <p className="rca-corr-card-lead">Physical hierarchy for anchoring evidence—not a substitute for the line walk.</p>
+          <ul className="rca-equip-tree">
+            {model.tree.map((node, idx) => (
+              <li
+                key={`${node.label}-${idx}`}
+                className="rca-equip-tree-node"
+                style={{ paddingLeft: `${node.depth * 0.85 + 0.25}rem` }}
+              >
+                <span className="rca-equip-tree-label">{node.label}</span>
+                <span className="rca-equip-tree-meta">{node.meta}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+
+      {model.excelSteps.length > 0 && (
+        <div className="rca-corr-excel">
+          <h4 className="rca-corr-excel-title">Routed analysis beats (from operational feeds)</h4>
+          <div className="agentic-rca-steps">
+            {model.excelSteps.map((st, idx) => (
+              <div key={st.id} className="agentic-rca-step">
+                <div className="agentic-rca-step-num">Beat {idx + 1}</div>
+                <h4>{st.step}</h4>
+                <p>{st.why}</p>
+                {st.evidence ? (
+                  <p className="rca-corr-evidence">{st.evidence}</p>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function OperationalActionsPanel() {
+  const { excelBundle } = useAppFlow();
+  const actions = useMemo(() => buildActionItems(excelBundle || {}), [excelBundle]);
+
+  if (!actions.length) {
+    return (
+      <p className="agentic-empty">
+        Prioritized countermeasures from the recommendation agent will list here. Asset-specific guidance
+        appears in the cards below.
+      </p>
+    );
+  }
+
+  return (
+    <div className="agentic-actions-grid">
+      {actions.map((a) => (
+        <article key={a.id} className="agentic-action-card">
+          <div className="agentic-ai-pill">Recommended action</div>
+          <h4>{a.title}</h4>
+          <div className="agentic-action-tags">
+            {a.priority ? <span className="agentic-tag">{a.priority}</span> : null}
+            {a.owner ? <span className="agentic-tag">{a.owner}</span> : null}
+            {a.when ? <span className="agentic-tag">{a.when}</span> : null}
+          </div>
+          {a.context ? <p className="agentic-action-context">{a.context}</p> : null}
+        </article>
+      ))}
+    </div>
+  );
+}
+
+export function DowntimeSignalsPanel() {
+  const { excelBundle } = useAppFlow();
+  const events = useMemo(() => buildDowntimeEvents(excelBundle || {}), [excelBundle]);
+
+  if (!events.length) {
+    return (
+      <p className="agentic-empty">
+        Downtime and schedule deltas from CMMS and line OEE feeds will surface here as narrative events.
+        Scheduled work orders below reflect the planned downtime planner view.
+      </p>
+    );
+  }
+
+  return (
+    <div className="agentic-signals">
+      {events.map((e) => (
+        <article key={e.id} className="agentic-signal-card">
+          <div className="agentic-signal-kicker">Availability impact</div>
+          <h4>{e.headline}</h4>
+          <p className="agentic-signal-meta">
+            {[e.when, e.plant, e.asset, e.duration].filter(Boolean).join(' · ')}
+          </p>
+          {e.context ? <p className="agentic-signal-body">{e.context}</p> : null}
+        </article>
+      ))}
+    </div>
+  );
+}
