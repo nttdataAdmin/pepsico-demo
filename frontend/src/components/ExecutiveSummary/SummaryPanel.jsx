@@ -1,8 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import './SummaryPanel.css';
 
-const SummaryPanel = ({ assets, selectedMonth, selectedYear }) => {
+const SummaryPanel = ({ assets, selectedMonth, selectedYear, onSelectAsset, focusedAssetId }) => {
+  const [query, setQuery] = useState('');
+
   const chartData = useMemo(() => {
     const statusCounts = {
       Breakdown: 0,
@@ -27,6 +29,7 @@ const SummaryPanel = ({ assets, selectedMonth, selectedYear }) => {
   }, [assets, selectedMonth]);
 
   const exceptionAssets = useMemo(() => {
+    const q = query.trim().toLowerCase();
     return assets
       .filter(
         (asset) =>
@@ -34,8 +37,25 @@ const SummaryPanel = ({ assets, selectedMonth, selectedYear }) => {
           asset.status === 'Failure Predicted' ||
           asset.status === 'Under Maintenance'
       )
-      .slice(0, 10);
-  }, [assets]);
+      .filter((asset) => {
+        if (!q) return true;
+        return (
+          String(asset.asset_id || '')
+            .toLowerCase()
+            .includes(q) ||
+          String(asset.plant || '')
+            .toLowerCase()
+            .includes(q) ||
+          String(asset.asset_type || '')
+            .toLowerCase()
+            .includes(q) ||
+          String(asset.status || '')
+            .toLowerCase()
+            .includes(q)
+        );
+      })
+      .slice(0, 12);
+  }, [assets, query]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -56,8 +76,16 @@ const SummaryPanel = ({ assets, selectedMonth, selectedYear }) => {
     <div className="summary-panel">
       <div className="summary-panel-inner">
         <div className="card-title">Fleet exceptions · {selectedYear}</div>
+        <p className="summary-panel-hint">Click a row to focus that asset on the map (uses header scope).</p>
         <div className="search-bar">
-          <input type="text" placeholder="Filter by plant or asset…" className="search-input" />
+          <input
+            type="search"
+            placeholder="Filter exceptions by plant, asset, type, or status…"
+            className="search-input"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="Filter exception list"
+          />
         </div>
         <div className="chart-container">
           <ResponsiveContainer width="100%" height={200}>
@@ -76,19 +104,30 @@ const SummaryPanel = ({ assets, selectedMonth, selectedYear }) => {
           {exceptionAssets.length === 0 ? (
             <p className="exception-empty">No open exceptions in this scope.</p>
           ) : (
-            exceptionAssets.map((asset) => (
-              <div key={asset.asset_id} className="exception-row">
-                <span className="exception-status" style={{ backgroundColor: getStatusColor(asset.status) }}>
-                  {asset.status}
-                </span>
-                <div className="exception-body">
-                  <strong>{asset.asset_id}</strong>
-                  <span className="exception-meta">
-                    {asset.plant} · {asset.asset_type}
+            exceptionAssets.map((asset) => {
+              const focused = focusedAssetId === asset.asset_id;
+              return (
+                <button
+                  key={asset.asset_id}
+                  type="button"
+                  className={`exception-row exception-row--action ${focused ? 'exception-row--focused' : ''}`}
+                  onClick={() => onSelectAsset && onSelectAsset(asset)}
+                >
+                  <span className="exception-status" style={{ backgroundColor: getStatusColor(asset.status) }}>
+                    {asset.status}
                   </span>
-                </div>
-              </div>
-            ))
+                  <div className="exception-body">
+                    <strong>{asset.asset_id}</strong>
+                    <span className="exception-meta">
+                      {asset.plant} · {asset.asset_type}
+                    </span>
+                  </div>
+                  <span className="exception-chevron" aria-hidden>
+                    {focused ? '✓' : '›'}
+                  </span>
+                </button>
+              );
+            })
           )}
         </div>
       </div>

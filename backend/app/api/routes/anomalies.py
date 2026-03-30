@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Query
 
+from app.services.anomaly_agent_briefing import build_anomaly_agent_briefing
 from app.services.data_loader import DataLoader
 
 router = APIRouter(prefix="/api/anomalies", tags=["anomalies"])
@@ -35,3 +36,15 @@ async def get_anomalies(
     if not rows:
         return []
     return _filter_rows(rows, state, plant, asset_id)
+
+
+@router.get("/agent-briefing")
+async def get_anomaly_agent_briefing(
+    state: Optional[str] = Query(None, description="Filter by state"),
+    plant: Optional[str] = Query(None, description="Filter by plant"),
+    asset_id: Optional[str] = Query(None, description="Filter by asset ID"),
+):
+    """Fused narrative + structured signals for the anomalies agent panel (same scope as telemetry)."""
+    rows = data_loader.load_anomalies()
+    filtered = _filter_rows(rows or [], state, plant, asset_id)
+    return build_anomaly_agent_briefing(filtered, state=state, plant=plant, asset_id=asset_id)

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { useAppFlow } from '../../context/AppFlowContext';
 import {
   buildExecutiveStreams,
@@ -77,9 +77,50 @@ export function ExecutiveLandingStreams() {
   );
 }
 
-export function AnomalySignalsPanel() {
+function formatFusionTime(iso) {
+  if (!iso) return null;
+  try {
+    return new Intl.DateTimeFormat(undefined, { timeStyle: 'short', dateStyle: 'short' }).format(new Date(iso));
+  } catch {
+    return null;
+  }
+}
+
+export function AnomalySignalsPanel({ fusionMeta = null, scopeFilters = null }) {
   const { excelBundle } = useAppFlow();
   const signals = useMemo(() => buildAnomalySignals(excelBundle || {}), [excelBundle]);
+  const [filterTab, setFilterTab] = useState('all');
+  const [expandedId, setExpandedId] = useState(null);
+  const [query, setQuery] = useState('');
+
+  const toggleExpand = useCallback((id) => {
+    setExpandedId((cur) => (cur === id ? null : id));
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return signals.filter((s) => {
+      if (scopeFilters?.state && s.scopeState && s.scopeState !== scopeFilters.state) return false;
+      if (filterTab === 'vibration' && s.signalChannel !== 'vibration') return false;
+      if (filterTab === 'thermal' && s.signalChannel !== 'thermal') return false;
+      if (filterTab === 'general' && s.signalChannel !== 'general') return false;
+      if (q) {
+        const hay = `${s.productionLine} ${s.detail || ''} ${s.kpiSignal} ${s.assetId || ''} ${s.sensorId || ''}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [signals, filterTab, query, scopeFilters]);
+
+  const counts = useMemo(() => {
+    const c = { all: signals.length, vibration: 0, thermal: 0, general: 0 };
+    signals.forEach((s) => {
+      if (s.signalChannel === 'vibration') c.vibration++;
+      else if (s.signalChannel === 'thermal') c.thermal++;
+      else c.general++;
+    });
+    return c;
+  }, [signals]);
 
   if (!signals.length) {
     return (
@@ -91,21 +132,160 @@ export function AnomalySignalsPanel() {
   }
 
   return (
-    <div className="agentic-signals">
-      {signals.map((s) => (
-        <article key={s.id} className="agentic-signal-card">
-          <div className="agentic-signal-kicker">Production line</div>
-          <h4>{s.productionLine}</h4>
-          <p className="agentic-signal-body">{s.stopStory}</p>
-          <p className="agentic-signal-meta">
-            <strong>KPI / trigger:</strong> {s.kpiSignal}
-            <br />
-            <strong>Downstream:</strong> {s.recommendationHook}
+    <section className="anomaly-signals-shell" aria-labelledby="anomaly-signals-heading">
+      <div className="anomaly-signals-shell-header">
+        <div>
+          <h3 id="anomaly-signals-heading" className="anomaly-signals-shell-title">
+            Fused production-line signals
+          </h3>
+          <p className="anomaly-signals-shell-lead">
+            Parsed from operational feeds — filter by channel, expand a card for full sensor context, or search by
+            asset / tag.
           </p>
-          {s.detail ? <p className="agentic-signal-meta">{s.detail}</p> : null}
-        </article>
-      ))}
-    </div>
+        </div>
+        {fusionMeta?.correlationId ? (
+          <div className="anomaly-signals-fusion-strip" aria-label="Telemetry fusion link">
+            <span className="anomaly-signals-fusion-dot" aria-hidden />
+            <span className="anomaly-signals-fusion-text">
+              Linked run <code className="anomaly-signals-fusion-code">{fusionMeta.correlationId}</code>
+              {formatFusionTime(fusionMeta.generatedAt) ? (
+                <>
+                  {' · '}
+                  <time dateTime={fusionMeta.generatedAt}>{formatFusionTime(fusionMeta.generatedAt)}</time>
+                </>
+              ) : null}
+            </span>
+          </div>
+        ) : (
+          <div className="anomaly-signals-fusion-strip anomaly-signals-fusion-strip--local">
+            <span className="anomaly-signals-fusion-text">Excel bundle narrative (connect API for live fusion stamp)</span>
+          </div>
+        )}
+      </div>
+
+      <div className="anomaly-signals-toolbar">
+        <div className="anomaly-signals-tabs" role="tablist" aria-label="Filter by signal type">
+          {[
+            { id: 'all', label: 'All', count: counts.all },
+            { id: 'vibration', label: 'Vibration', count: counts.vibration },
+            { id: 'thermal', label: 'Temperature', count: counts.thermal },
+            { id: 'general', label: 'Other', count: counts.general },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={filterTab === tab.id}
+              className={`anomaly-signals-tab ${filterTab === tab.id ? 'anomaly-signals-tab--active' : ''}`}
+              onClick={() => {
+                setFilterTab(tab.id);
+                setExpandedId(null);
+              }}
+            >
+              {tab.label}
+              <span className="anomaly-signals-tab-count">{tab.count}</span>
+            </button>
+          ))}
+        </div>
+        <input
+          type="search"
+          className="anomaly-signals-search"
+          placeholder="Search asset, sensor, KPI…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          aria-label="Search fused signals"
+        />
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="agentic-empty anomaly-signals-empty">No signals match this filter — try another tab or clear search.</p>
+      ) : (
+        <div className="agentic-signals agentic-signals--interactive">
+          {filtered.map((s, idx) => {
+            const expanded = expandedId === s.id;
+            const sev = s.severity || 'info';
+            const ch = s.signalChannel || 'general';
+            return (
+              <article
+                key={s.id}
+                className={`agentic-signal-card agentic-signal-card--interactive agentic-signal-card--ch-${ch} agentic-signal-card--${sev}`}
+                style={{ animationDelay: `${Math.min(idx, 12) * 0.04}s` }}
+              >
+                <button
+                  type="button"
+                  className="agentic-signal-card-hit"
+                  aria-expanded={expanded}
+                  onClick={() => toggleExpand(s.id)}
+                >
+                  <div className="agentic-signal-card-hit-main">
+                    <div className="agentic-signal-kicker-row">
+                      <span className="agentic-signal-kicker">Production line</span>
+                      {s.sensorTypeLabel ? (
+                        <span className={`agentic-signal-channel-pill agentic-signal-channel-pill--${ch}`}>
+                          {s.sensorTypeLabel}
+                        </span>
+                      ) : null}
+                      {sev !== 'info' ? (
+                        <span className={`agentic-signal-sev-pill agentic-signal-sev-pill--${sev}`}>{sev}</span>
+                      ) : null}
+                    </div>
+                    <h4 className="agentic-signal-card-title">{s.productionLine}</h4>
+                    <p className="agentic-signal-body agentic-signal-body--clip">{s.stopStory}</p>
+                    <dl className="agentic-signal-kv">
+                      <div>
+                        <dt>KPI / trigger</dt>
+                        <dd>{s.kpiSignal}</dd>
+                      </div>
+                      <div>
+                        <dt>Downstream</dt>
+                        <dd>{s.recommendationHook}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                  <span className="agentic-signal-chevron" aria-hidden>
+                    {expanded ? '▴' : '▾'}
+                  </span>
+                </button>
+                {expanded ? (
+                  <div className="agentic-signal-expand" id={`${s.id}-detail`}>
+                    {s.sensorId || s.assetId || s.unit || s.warnThresholdHigh ? (
+                      <dl className="agentic-signal-expand-grid">
+                        {s.sensorId ? (
+                          <div>
+                            <dt>Sensor</dt>
+                            <dd>{s.sensorId}</dd>
+                          </div>
+                        ) : null}
+                        {s.assetId ? (
+                          <div>
+                            <dt>Asset</dt>
+                            <dd>{s.assetId}</dd>
+                          </div>
+                        ) : null}
+                        {s.unit ? (
+                          <div>
+                            <dt>Unit</dt>
+                            <dd>{s.unit}</dd>
+                          </div>
+                        ) : null}
+                        {s.warnThresholdHigh ? (
+                          <div>
+                            <dt>Warning threshold (high)</dt>
+                            <dd>{s.warnThresholdHigh}</dd>
+                          </div>
+                        ) : null}
+                      </dl>
+                    ) : null}
+                    {s.detail ? <p className="agentic-signal-expand-full">{s.detail}</p> : null}
+                    <p className="agentic-signal-expand-hint">Click again to collapse · cross-check with charts below.</p>
+                  </div>
+                ) : null}
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }
 

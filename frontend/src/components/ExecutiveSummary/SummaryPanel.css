@@ -6,6 +6,13 @@
   padding: 0;
 }
 
+.summary-panel-hint {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: #6b7785;
+}
+
 .search-bar {
   margin-bottom: 15px;
 }
@@ -47,8 +54,40 @@
   border-bottom: 1px solid rgba(0, 42, 94, 0.08);
 }
 
+.exception-row--action {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(0, 42, 94, 0.08);
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 0.55rem 0.35rem;
+  margin: 0 -0.35rem;
+  transition: background 0.15s ease;
+}
+
+.exception-row--action:hover {
+  background: rgba(0, 92, 188, 0.06);
+}
+
+.exception-row--action.exception-row--focused {
+  background: rgba(0, 92, 188, 0.12);
+}
+
 .exception-row:last-child {
   border-bottom: none;
+}
+
+.exception-chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #005cbc;
+  align-self: center;
 }
 
 .exception-status {

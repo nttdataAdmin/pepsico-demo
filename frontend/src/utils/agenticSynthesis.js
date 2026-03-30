@@ -553,6 +553,43 @@ export function resolveAnomalyIndicatorFeeds(bundle, filters, telemetryRows) {
   };
 }
 
+function classifyAnomalySignalChannel(row) {
+  const st = pickCell(row, 'sensortype', 'sensor type', 'measurementtype', 'measurement type', 'signal type');
+  if (st) {
+    const sl = st.toLowerCase();
+    if (sl.includes('vib')) return { channel: 'vibration', label: st };
+    if (sl.includes('temp') || sl.includes('thermal')) return { channel: 'thermal', label: st };
+  }
+  const unit = pickCell(row, 'unit', 'units', 'uom');
+  if (unit) {
+    const u = unit.toLowerCase();
+    if (u.includes('mm/s') || u.includes('m/s')) return { channel: 'vibration', label: pickCell(row, 'sensortype', 'sensor type') || 'Vibration' };
+    if (u.includes('°') || u.includes('deg') || u.includes('temp'))
+      return { channel: 'thermal', label: pickCell(row, 'sensortype', 'sensor type') || 'Temperature' };
+  }
+  const blob = Object.values(row)
+    .map((v) => String(v || '').toLowerCase())
+    .join(' ');
+  if (blob.includes('vibration') || blob.includes('mm/s')) return { channel: 'vibration', label: 'Vibration' };
+  if (blob.includes('temperature') || blob.includes('thermal') || blob.includes('°f'))
+    return { channel: 'thermal', label: 'Temperature' };
+  return { channel: 'general', label: null };
+}
+
+function inferAnomalySeverity(kpiRaw, channel) {
+  const n = parseFloat(String(kpiRaw || '').replace(/[^\d.-]/g, ''));
+  if (Number.isNaN(n)) return 'info';
+  if (channel === 'vibration') {
+    if (n >= 120) return 'critical';
+    if (n >= 100) return 'warn';
+  }
+  if (channel === 'thermal') {
+    if (n >= 180) return 'critical';
+    if (n >= 170) return 'warn';
+  }
+  return 'info';
+}
+
 export function buildAnomalySignals(bundle) {
   const streams = getNormalizedStreams(bundle, 'anomalies');
   const signals = [];
@@ -566,15 +603,34 @@ export function buildAnomalySignals(bundle) {
         firstMatching(row, [/duration/, /minutes/, /hours/]);
       const kpi = firstMatching(row, [/kpi/, /trigger/, /alarm/, /threshold/, /limit/, /setpoint/]);
       const rec = firstMatching(row, [/recommend/, /follow/, /next/, /action/]);
-      const nar = rowSummary(row, s.columns, 5);
+      const nar = rowSummary(row, s.columns, 8);
       if (line || stop || kpi || nar) {
+        const { channel, label: sensorTypeLabel } = classifyAnomalySignalChannel(row);
+        const assetId = pickCell(row, 'assetid', 'asset id', 'equipment id', 'equipmentid');
+        const sensorId = pickCell(row, 'sensorid', 'sensor id', 'tag', 'point id');
+        const unit = pickCell(row, 'unit', 'units', 'uom');
+        const warnHi =
+          pickCell(row, 'warningthresholdhigh', 'warning threshold high', 'warning high', 'high threshold') ||
+          pickCell(row, 'thresholdhigh', 'threshold high');
+        const headline = assetId || line || 'Production line (fused read)';
+        const severity = inferAnomalySeverity(kpi || warnHi, channel);
+        const scopeState = pickCell(row, 'state', 'site', 'region', 'location');
+
         signals.push({
           id: `${s.name}-${signals.length}`,
-          productionLine: line || 'Production line (fused read)',
+          productionLine: headline,
           stopStory: stop || 'Stop pattern correlated from historian and execution context.',
-          kpiSignal: kpi || 'KPI boundary review — align with live telemetry below.',
+          kpiSignal: kpi || warnHi || 'KPI boundary review — align with live telemetry below.',
           recommendationHook: rec || 'Severity routes to prioritized actions once validated.',
           detail: nar,
+          signalChannel: channel,
+          sensorTypeLabel: sensorTypeLabel || (channel === 'vibration' ? 'Vibration' : channel === 'thermal' ? 'Temperature' : null),
+          severity,
+          assetId,
+          sensorId,
+          unit,
+          warnThresholdHigh: warnHi,
+          scopeState,
         });
       }
     }

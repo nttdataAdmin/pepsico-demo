@@ -80,6 +80,28 @@
   margin-bottom: 1.25rem;
 }
 
+.es-kpi-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: #5a6570;
+}
+
+.es-kpi-strip--live {
+  animation: es-kpi-enter 0.45s ease-out;
+}
+
+@keyframes es-kpi-enter {
+  from {
+    opacity: 0.65;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .summary-panel-full {
   width: 100%;
   margin-top: 0.5rem;

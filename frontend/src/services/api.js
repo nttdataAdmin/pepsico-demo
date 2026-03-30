@@ -68,6 +68,16 @@ export const getAnomalies = async (filters = {}) => {
   return response.data;
 };
 
+/** Agent-style fused narrative for the anomalies page (same filters as telemetry). */
+export const getAnomalyAgentBriefing = async (filters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.state) params.append('state', filters.state);
+  if (filters.plant) params.append('plant', filters.plant);
+  if (filters.asset_id) params.append('asset_id', filters.asset_id);
+  const response = await api.get(`/api/anomalies/agent-briefing?${params.toString()}`);
+  return response.data;
+};
+
 export const getRootCauseAnalysis = async (filters = {}) => {
   const params = new URLSearchParams();
   if (filters.state) params.append('state', filters.state);

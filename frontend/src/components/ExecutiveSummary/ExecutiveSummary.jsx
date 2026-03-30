@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getAssetSummaryFiltered, getAssetsFiltered } from '../../data/mockData';
 import AssetStatusSummary from './AssetStatusSummary';
 import MapView from './MapView';
-import SummaryPanel from './SummaryPanel';
+import ExecutiveDetailTabs from './ExecutiveDetailTabs';
 import DatabaseIndicator from '../Layout/DatabaseIndicator';
 import {
   DataFeedHint,
@@ -14,12 +15,16 @@ import { SITE_LOCATIONS } from '../../config/siteLocations';
 import './ExecutiveSummary.css';
 
 const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChange }) => {
+  const navigate = useNavigate();
   const { excelBundle } = useAppFlow();
   const feeds = useMemo(() => summarizeExecutiveFeeds(excelBundle || {}), [excelBundle]);
 
   const [summary, setSummary] = useState(null);
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [detailTab, setDetailTab] = useState('snapshot');
+  const [fleetStatusFilter, setFleetStatusFilter] = useState(null);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState(null);
 
   const plantOptions = useMemo(() => {
     if (!filters.state) return [];
@@ -40,14 +45,40 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
       if (!filters.state) {
         setSummary(null);
         setAssets([]);
+        setLastRefreshedAt(null);
         setLoading(false);
         return;
       }
       const assetsData = getAssetsFiltered(filters);
       setSummary(getAssetSummaryFiltered(filters));
       setAssets(assetsData);
+      setLastRefreshedAt(new Date());
       setLoading(false);
     }, 280);
+  };
+
+  const handleKpiSegment = (segment) => {
+    switch (segment) {
+      case 'total':
+        setDetailTab('fleet');
+        setFleetStatusFilter(null);
+        break;
+      case 'working':
+        setDetailTab('fleet');
+        setFleetStatusFilter('Working');
+        break;
+      case 'failure_predicted':
+        navigate('/recommendations');
+        break;
+      case 'under_maintenance':
+        navigate('/maintenance');
+        break;
+      case 'breakdown':
+        navigate('/anomalies');
+        break;
+      default:
+        break;
+    }
   };
 
   if (loading && placeSelected) {
@@ -157,8 +188,14 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
             />
           </div>
 
-          <div className="es-kpi-strip">
-            <AssetStatusSummary summary={summary} layout="horizontal" />
+          <p className="es-kpi-hint">KPI tiles are interactive — fleet totals open the register; risk states jump to the right workspace.</p>
+          <div className="es-kpi-strip es-kpi-strip--live">
+            <AssetStatusSummary
+              summary={summary}
+              layout="horizontal"
+              interactive
+              onSegmentClick={handleKpiSegment}
+            />
           </div>
 
           <section className="es-map-stage" aria-labelledby="es-map-heading">
@@ -179,9 +216,19 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
           <h2 className="es-integrated-section-title">Integrated landing narrative</h2>
           <ExecutiveLandingStreams />
 
-          <div className="card summary-panel-full">
-            <SummaryPanel assets={assets} selectedMonth={selectedMonth} selectedYear={selectedYear} />
-          </div>
+          <ExecutiveDetailTabs
+            assets={assets}
+            summary={summary}
+            filters={filters}
+            onFiltersChange={onFiltersChange}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+            activeTab={detailTab}
+            onTabChange={setDetailTab}
+            fleetStatusFilter={fleetStatusFilter}
+            onFleetStatusFilterChange={setFleetStatusFilter}
+            lastRefreshedAt={lastRefreshedAt}
+          />
         </>
       )}
     </div>

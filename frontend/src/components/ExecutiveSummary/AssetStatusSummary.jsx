@@ -1,7 +1,15 @@
 import React from 'react';
 import './AssetStatusSummary.css';
 
-const AssetStatusSummary = ({ summary, layout = 'vertical' }) => {
+const SEGMENT_KEYS = {
+  default: 'total',
+  working: 'working',
+  'failure-predicted': 'failure_predicted',
+  'under-maintenance': 'under_maintenance',
+  breakdown: 'breakdown',
+};
+
+const AssetStatusSummary = ({ summary, layout = 'vertical', interactive, onSegmentClick }) => {
   if (!summary) return null;
 
   const statusItems = [
@@ -14,14 +22,35 @@ const AssetStatusSummary = ({ summary, layout = 'vertical' }) => {
 
   return (
     <div
-      className={`asset-status-summary ${layout === 'horizontal' ? 'asset-status-summary--horizontal' : ''}`}
+      className={`asset-status-summary ${layout === 'horizontal' ? 'asset-status-summary--horizontal' : ''} ${
+        interactive ? 'asset-status-summary--interactive' : ''
+      }`}
+      role={interactive ? 'group' : undefined}
+      aria-label={interactive ? 'Fleet KPIs — click to drill down' : undefined}
     >
-      {statusItems.map((item) => (
-        <div key={item.label} className={`status-card status-${item.color}`}>
-          <div className="status-value">{item.value}</div>
-          <div className="status-label">{item.label}</div>
-        </div>
-      ))}
+      {statusItems.map((item) => {
+        const segment = SEGMENT_KEYS[item.color] || 'total';
+        if (interactive && onSegmentClick) {
+          return (
+            <button
+              key={item.label}
+              type="button"
+              className={`status-card status-${item.color} status-card--interactive`}
+              onClick={() => onSegmentClick(segment)}
+            >
+              <div className="status-value">{item.value}</div>
+              <div className="status-label">{item.label}</div>
+              <span className="status-cta">Open</span>
+            </button>
+          );
+        }
+        return (
+          <div key={item.label} className={`status-card status-${item.color}`}>
+            <div className="status-value">{item.value}</div>
+            <div className="status-label">{item.label}</div>
+          </div>
+        );
+      })}
     </div>
   );
 };
