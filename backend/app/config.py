@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     azure_deployment: str = "gpt-4.1"
     azure_api_key: str = ""
     azure_api_version: str = "2024-08-01-preview"
+    # Global page assistant (longer answers; override via env AZURE_ASSISTANT_MAX_TOKENS)
+    azure_assistant_max_tokens: int = 4096
+    # gpt-4o and newer Azure deployments reject max_tokens; use max_completion_tokens (set false for legacy models)
+    azure_use_max_completion_tokens: bool = True
 
     azure_doc_intelligence_endpoint: str = ""
     azure_doc_intelligence_key: str = ""

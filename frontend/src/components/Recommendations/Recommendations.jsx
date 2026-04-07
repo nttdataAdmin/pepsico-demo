@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getRecommendations, getAssetsFiltered } from '../../data/mockData';
 import { getAIRecommendation } from '../../services/aiService';
 import RecommendationActionCards from './RecommendationActionCards';
 import SelectPlaceGate from '../Layout/SelectPlaceGate';
 import { DataFeedHint, OperationalActionsPanel } from '../Agentic/IntegratedDataPanels';
+import { usePageChatKnowledge } from '../../context/ChatAssistantContext';
 import './Recommendations.css';
 
 const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange }) => {
@@ -102,6 +103,27 @@ const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange
       setLoadingAI(false);
     }
   };
+
+  const recChatKnowledge = useMemo(() => {
+    if (!filters.state) {
+      return 'Recommendations: no state selected; user must pick a site to load the action queue.';
+    }
+    return JSON.stringify(
+      {
+        view: 'recommendations',
+        filters,
+        period: { month: selectedMonth, year: selectedYear },
+        loading,
+        recommendationCount: recommendations.length,
+        recommendationSample: recommendations.slice(0, 20),
+        aiGuidanceAssetIds: Object.keys(aiRecommendations),
+      },
+      null,
+      2
+    );
+  }, [filters, selectedMonth, selectedYear, loading, recommendations, aiRecommendations]);
+
+  usePageChatKnowledge(recChatKnowledge);
 
   if (!filters.state) {
     return (

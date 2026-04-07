@@ -10,6 +10,7 @@ import {
   ExecutiveLandingStreams,
 } from '../Agentic/IntegratedDataPanels';
 import { useAppFlow } from '../../context/AppFlowContext';
+import { usePageChatKnowledge } from '../../context/ChatAssistantContext';
 import { summarizeExecutiveFeeds } from '../../utils/agenticSynthesis';
 import { SITE_LOCATIONS } from '../../config/siteLocations';
 import './ExecutiveSummary.css';
@@ -34,6 +35,31 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
   }, [filters.state]);
 
   const placeSelected = !!filters.state;
+
+  const chatKnowledge = useMemo(() => {
+    if (!filters.state) {
+      return 'No state/plant selected. The executive view is empty until the user chooses a place from the header filters.';
+    }
+    try {
+      return JSON.stringify(
+        {
+          view: 'executive-summary',
+          filters,
+          period: { month: selectedMonth, year: selectedYear },
+          summary,
+          assetCount: assets.length,
+          lastRefreshedAt: lastRefreshedAt ? lastRefreshedAt.toISOString() : null,
+          excelFeedsSummary: feeds,
+        },
+        null,
+        2
+      );
+    } catch {
+      return 'Executive summary: data snapshot unavailable.';
+    }
+  }, [filters, selectedMonth, selectedYear, summary, assets.length, lastRefreshedAt, feeds]);
+
+  usePageChatKnowledge(chatKnowledge);
 
   useEffect(() => {
     loadData();

@@ -10,6 +10,7 @@ import { DataFeedHint, AnomalySignalsPanel } from '../Agentic/IntegratedDataPane
 import AnomaliesLoading from './AnomaliesLoading';
 import AnomalyAgentPanel from './AnomalyAgentPanel';
 import { useAppFlow } from '../../context/AppFlowContext';
+import { usePageChatKnowledge } from '../../context/ChatAssistantContext';
 import { resolveAnomalyIndicatorFeeds } from '../../utils/agenticSynthesis';
 import './Anomalies.css';
 
@@ -113,6 +114,48 @@ const Anomalies = ({ selectedMonth, selectedYear, filters, onFiltersChange }) =>
       if (mounted.current) setRefreshing(false);
     }
   }, [filters.state, loadTelemetryAndBriefing]);
+
+  const anomaliesChatKnowledge = useMemo(() => {
+    if (!filters.state) {
+      return 'Anomalies: no state/plant selected yet; telemetry is gated until the user picks a site.';
+    }
+    const narrative =
+      briefing && (briefing.narrative || briefing.summary || briefing.briefing || briefing.text);
+    const briefingSnippet = briefing
+      ? {
+          correlation_id: briefing.correlation_id,
+          generated_at: briefing.generated_at,
+          narrative_preview: typeof narrative === 'string' ? narrative.slice(0, 6000) : null,
+        }
+      : null;
+    return JSON.stringify(
+      {
+        view: 'anomalies',
+        filters,
+        period: { month: selectedMonth, year: selectedYear },
+        dataSource,
+        loading,
+        anomalyRowCount: anomalyData.length,
+        activeModel,
+        briefing: briefingSnippet,
+        indicatorFeeds,
+      },
+      null,
+      2
+    );
+  }, [
+    filters,
+    selectedMonth,
+    selectedYear,
+    dataSource,
+    loading,
+    anomalyData.length,
+    activeModel,
+    briefing,
+    indicatorFeeds,
+  ]);
+
+  usePageChatKnowledge(anomaliesChatKnowledge);
 
   if (!filters.state) {
     return (

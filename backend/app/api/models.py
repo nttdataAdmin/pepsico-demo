@@ -49,3 +49,18 @@ class AnalysisRequest(BaseModel):
 class AIResponse(BaseModel):
     result: str
 
+
+class AssistantChatMessage(BaseModel):
+    role: str  # "user" | "assistant"
+    content: str
+
+
+class AssistantRequest(BaseModel):
+    """Multi-turn assistant with page-scoped knowledge (RAG-style context in knowledge_base)."""
+
+    messages: List[AssistantChatMessage]
+    route: str = "/"
+    page_title: Optional[str] = None
+    knowledge_base: str = ""
+    ui_context: Optional[Dict[str, Any]] = None
+

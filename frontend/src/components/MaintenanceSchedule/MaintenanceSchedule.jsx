@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { getMaintenanceSchedule } from '../../data/mockData';
 import MaintenanceEventCards from './MaintenanceEventCards';
 import SelectPlaceGate from '../Layout/SelectPlaceGate';
 import { DataFeedHint, DowntimeSignalsPanel } from '../Agentic/IntegratedDataPanels';
+import { usePageChatKnowledge } from '../../context/ChatAssistantContext';
 import './MaintenanceSchedule.css';
 
 const MaintenanceSchedule = ({ selectedMonth, selectedYear, filters, onFiltersChange }) => {
@@ -44,6 +45,26 @@ const MaintenanceSchedule = ({ selectedMonth, selectedYear, filters, onFiltersCh
       setLoading(false);
     }, 300);
   };
+
+  const maintChatKnowledge = useMemo(() => {
+    if (!filters.state) {
+      return 'Maintenance schedule: no state selected; user must pick a site for planned downtime.';
+    }
+    return JSON.stringify(
+      {
+        view: 'maintenance',
+        filters,
+        period: { month: selectedMonth, year: selectedYear },
+        loading,
+        scheduledWorkOrderCount: schedule.length,
+        scheduleSample: schedule.slice(0, 20),
+      },
+      null,
+      2
+    );
+  }, [filters, selectedMonth, selectedYear, loading, schedule]);
+
+  usePageChatKnowledge(maintChatKnowledge);
 
   if (!filters.state) {
     return (

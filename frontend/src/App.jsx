@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/Login/Login';
 import DashboardStepNav from './components/Layout/DashboardStepNav';
 import Header from './components/Layout/Header';
+import GlobalChatAssistant from './components/Layout/GlobalChatAssistant';
+import { ChatRouteSync, ChatUiSync } from './components/Layout/ChatAssistantSync';
+import { ChatAssistantProvider, useChatAssistant } from './context/ChatAssistantContext';
 import ExecutiveSummary from './components/ExecutiveSummary/ExecutiveSummary';
 import Anomalies from './components/Anomalies/Anomalies';
 import RootCauseAnalysis from './components/RootCauseAnalysis/RootCauseAnalysis';
@@ -59,6 +62,12 @@ function AuthenticatedShell({ user, onLogout }) {
 
   return (
     <Router>
+      <ChatRouteSync />
+      <ChatUiSync
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
+        filters={filters}
+      />
       <div className="App" style={appBgStyle}>
         <div style={bgOverlayStyle} />
         <Header
@@ -152,6 +161,15 @@ function AppInner() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const { clearFlow, setFlow } = useAppFlow();
+  const { setRoutePath, setPageTitle, setUiContext } = useChatAssistant();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setRoutePath('/login');
+      setPageTitle('Sign in');
+      setUiContext(null);
+    }
+  }, [isAuthenticated, setRoutePath, setPageTitle, setUiContext]);
 
   const handleLogin = (userData) => {
     setFlow({ outcome: null, fullDashboard: false });
@@ -165,17 +183,20 @@ function AppInner() {
     setIsAuthenticated(false);
   };
 
-  if (!isAuthenticated) {
-    return <Login onLogin={handleLogin} />;
-  }
-
-  return <AuthenticatedShell user={user} onLogout={handleLogout} />;
+  return (
+    <>
+      {!isAuthenticated ? <Login onLogin={handleLogin} /> : <AuthenticatedShell user={user} onLogout={handleLogout} />}
+      <GlobalChatAssistant />
+    </>
+  );
 }
 
 export default function App() {
   return (
     <AppFlowProvider>
-      <AppInner />
+      <ChatAssistantProvider>
+        <AppInner />
+      </ChatAssistantProvider>
     </AppFlowProvider>
   );
 }

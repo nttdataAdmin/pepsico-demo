@@ -9,6 +9,14 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 
+def _completion_budget_kwargs(limit: int) -> Dict[str, int]:
+    """Azure gpt-4o+ uses max_completion_tokens; older chat models use max_tokens."""
+    n = max(1, min(int(limit), 16384))
+    if settings.azure_use_max_completion_tokens:
+        return {"max_completion_tokens": n}
+    return {"max_tokens": n}
+
+
 class AIService:
     def __init__(self):
         self.client = None
@@ -65,7 +73,7 @@ Format your response as a clear, professional recommendation suitable for manage
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
-                max_tokens=500
+                **_completion_budget_kwargs(500),
             )
             return response.choices[0].message.content
         except Exception as e:
@@ -114,7 +122,7 @@ Format your response as a professional analysis report."""
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
-                max_tokens=800
+                **_completion_budget_kwargs(800),
             )
             return response.choices[0].message.content
         except Exception as e:
@@ -164,11 +172,79 @@ Keep total length under 280 words. Professional, direct tone."""
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.5,
-                max_tokens=700,
+                **_completion_budget_kwargs(700),
             )
             text = (response.choices[0].message.content or "").strip()
             return text or None
         except Exception as e:
             logger.warning("Work order narrative LLM failed: %s", e)
             return None
+
+    def assistant_chat(
+        self,
+        messages: List[Dict[str, str]],
+        route: str,
+        page_title: Optional[str],
+        knowledge_base: str,
+        ui_context: Optional[Dict[str, Any]] = None,
+        max_tokens: Optional[int] = None,
+    ) -> str:
+        """
+        General chat assistant grounded in the provided knowledge_base and optional UI snapshot.
+        """
+        if not self.client:
+            return "Azure OpenAI is not configured. Set AZURE_ENDPOINT and AZURE_API_KEY in the backend .env file."
+
+        cap = max_tokens if max_tokens is not None else settings.azure_assistant_max_tokens
+        meta_parts = [f"Current app route: {route}"]
+        if page_title:
+            meta_parts.append(f"Page title: {page_title}")
+        if ui_context:
+            meta_parts.append("UI context (filters, selections):\n" + json.dumps(ui_context, indent=2)[:12000])
+        meta_block = "\n".join(meta_parts)
+
+        system = f"""You are the in-app assistant for the PepsiCo Management System demo — a maintenance, asset health, and operations analytics application.
+
+The user may be on Executive summary, Anomalies, Root cause, Recommendations, or Maintenance (see SESSION META route). Tailor answers to that step when relevant.
+
+You must answer using:
+1) The KNOWLEDGE BASE below (authoritative for what this screen shows and how to use the app).
+2) The user's questions and conversation history.
+3) General PepsiCo-style maintenance and reliability best practices only when they do not contradict the knowledge base.
+
+If something is not in the knowledge base or you are unsure, say so briefly and suggest what the user could check on screen or in the docs.
+
+Keep answers clear and scannable (short paragraphs or bullets when helpful). No raw JSON dumps unless the user asks for data.
+
+--- KNOWLEDGE BASE ---
+{knowledge_base[:120000]}
+
+--- SESSION META ---
+{meta_block}
+"""
+
+        api_messages: List[Dict[str, str]] = [{"role": "system", "content": system}]
+        for m in messages:
+            role = m.get("role", "user")
+            if role not in ("user", "assistant"):
+                continue
+            content = (m.get("content") or "").strip()
+            if not content:
+                continue
+            api_messages.append({"role": role, "content": content[:32000]})
+
+        if len(api_messages) <= 1:
+            return "Send a message to continue."
+
+        try:
+            response = self.client.chat.completions.create(
+                model=self.deployment,
+                messages=api_messages,
+                temperature=0.45,
+                **_completion_budget_kwargs(min(cap, 8192)),
+            )
+            return (response.choices[0].message.content or "").strip() or "(No response)"
+        except Exception as e:
+            logger.warning("Assistant chat failed: %s", e)
+            return f"Unable to reach the assistant: {e}"
 

@@ -130,6 +130,12 @@ export const getAIAnalysis = async (requestData) => {
   return response.data;
 };
 
+/** Global page assistant (longer timeout for large context + answers). */
+export const postAssistantChat = async (body) => {
+  const response = await api.post('/api/ai/assistant', body, { timeout: 120000 });
+  return response.data;
+};
+
 /** All sheets from super_excel.xlsx (via backend). */
 export const getSuperExcel = async () => {
   const response = await api.get('/api/super-excel');

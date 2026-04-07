@@ -1,7 +1,8 @@
 from fastapi import APIRouter
 from app.services.ai_service import AIService
 from app.services.data_loader import DataLoader
-from app.api.models import RecommendationRequest, AnalysisRequest, AIResponse
+from app.services.assistant_context import build_executive_assistant_snapshot
+from app.api.models import RecommendationRequest, AnalysisRequest, AIResponse, AssistantRequest
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
 ai_service = AIService()
@@ -59,4 +60,42 @@ async def get_ai_analysis(request: AnalysisRequest):
     )
     
     return AIResponse(result=analysis)
+
+
+ASSISTANT_ALLOWED_ROUTES = frozenset(
+    {
+        "/executive-summary",
+        "/anomalies",
+        "/root-cause",
+        "/recommendations",
+        "/maintenance",
+    }
+)
+
+
+@router.post("/assistant", response_model=AIResponse)
+async def assistant_chat(request: AssistantRequest):
+    """Dashboard assistant (all steps except login/upload); merges backend dataset snapshot."""
+    route = (request.route or "").strip().rstrip("/") or "/"
+    if route not in ASSISTANT_ALLOWED_ROUTES:
+        return AIResponse(
+            result="The assistant is available on dashboard steps (Executive summary, Anomalies, Root cause, Recommendations, Maintenance), not on Login or Upload."
+        )
+
+    kb = (request.knowledge_base or "").strip()
+    try:
+        snap = build_executive_assistant_snapshot(data_loader, request.ui_context, client_route=route)
+        kb = f"{kb}\n\n--- Backend dataset snapshot (use for asset counts, IDs, status, samples) ---\n{snap}"
+    except Exception as e:
+        kb = f"{kb}\n\n(Backend data snapshot failed: {e})"
+
+    payload = [{"role": m.role, "content": m.content} for m in request.messages]
+    text = ai_service.assistant_chat(
+        messages=payload,
+        route=request.route,
+        page_title=request.page_title,
+        knowledge_base=kb,
+        ui_context=request.ui_context,
+    )
+    return AIResponse(result=text)
 

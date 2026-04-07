@@ -5,6 +5,7 @@ import RcaTraceGraphic from './RcaTraceGraphic';
 import SelectPlaceGate from '../Layout/SelectPlaceGate';
 import { DataFeedHint, RcaCorroborationPanel } from '../Agentic/IntegratedDataPanels';
 import { useAppFlow } from '../../context/AppFlowContext';
+import { usePageChatKnowledge } from '../../context/ChatAssistantContext';
 import { deriveRcaFlowSnapshot } from './deriveRcaFlowSnapshot';
 import { buildRcaCorroborationPanelModel } from '../../utils/rcaCorroborationModel';
 import './RootCauseAnalysis.css';
@@ -138,6 +139,44 @@ const RootCauseAnalysis = ({ selectedMonth, selectedYear, filters, onFiltersChan
     () => buildRcaCorroborationPanelModel(excelBundle || {}, rcaSnap),
     [excelBundle, rcaSnap]
   );
+
+  const rcaChatKnowledge = useMemo(() => {
+    if (!filters.state) {
+      return 'Root cause: no state/plant selected; user must choose a site to load RCA.';
+    }
+    const dataHint =
+      rootCauseData && typeof rootCauseData === 'object'
+        ? { topKeys: Object.keys(rootCauseData).slice(0, 20) }
+        : null;
+    return JSON.stringify(
+      {
+        view: 'root-cause',
+        filters,
+        period: { month: selectedMonth, year: selectedYear },
+        loading,
+        selectedPath,
+        thresholdCrossingsCount: thresholdCrossings.length,
+        thresholdCrossingsSample: thresholdCrossings.slice(0, 25),
+        hasFlowSnapshot: !!rcaSnap,
+        hasCorroborationPanel: !!corroborationModel,
+        rootCauseDataHint: dataHint,
+      },
+      null,
+      2
+    );
+  }, [
+    filters,
+    selectedMonth,
+    selectedYear,
+    loading,
+    selectedPath,
+    thresholdCrossings,
+    rcaSnap,
+    corroborationModel,
+    rootCauseData,
+  ]);
+
+  usePageChatKnowledge(rcaChatKnowledge);
 
   if (!filters.state) {
     return (
