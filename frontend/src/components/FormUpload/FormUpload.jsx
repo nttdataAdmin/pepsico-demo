@@ -1,9 +1,9 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { classifyForm } from '../../services/api';
 import { useAppFlow } from '../../context/AppFlowContext';
 import FormProcessingOverlay, { PROCESSING_STEPS } from './FormProcessingOverlay';
-import GoSuccessModal from './GoSuccessModal';
+import { OPERATOR_ROLES } from '../../utils/operatorRole';
 import './FormUpload.css';
 
 function sleep(ms) {
@@ -12,22 +12,20 @@ function sleep(ms) {
 
 export default function FormUpload({ onLogout }) {
   const navigate = useNavigate();
-  const { setFlow, loadExcel, clearFlow, flow } = useAppFlow();
+  const { setFlow, loadExcel } = useAppFlow();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [procStep, setProcStep] = useState(0);
   const [waitingApi, setWaitingApi] = useState(false);
-  const [goModalOpen, setGoModalOpen] = useState(false);
-
-  useEffect(() => {
-    if (flow.outcome === 'go' && !flow.fullDashboard) {
-      setGoModalOpen(true);
-    }
-  }, [flow.outcome, flow.fullDashboard]);
+  const [operatorRole, setOperatorRole] = useState(OPERATOR_ROLES.processing);
 
   const runPipeline = useCallback(
     async (file, clientHint) => {
+      if (!operatorRole) {
+        setErr('Select your operator role (processing or packaging) before uploading.');
+        return;
+      }
       setErr(null);
       setBusy(true);
       setProcessing(true);
@@ -47,16 +45,22 @@ export default function FormUpload({ onLogout }) {
         setProcessing(false);
 
         const isNoGo = res.classification === 'no_go';
-        setFlow({
-          outcome: isNoGo ? 'no_go' : 'go',
-          fullDashboard: isNoGo,
-        });
         await loadExcel(true);
 
         if (isNoGo) {
+          setFlow({
+            outcome: 'no_go',
+            operatorRole,
+            hitlApproved: false,
+          });
           navigate('/executive-summary', { replace: true });
         } else {
-          setGoModalOpen(true);
+          setFlow({
+            outcome: 'go',
+            operatorRole,
+            hitlApproved: false,
+          });
+          navigate('/executive-summary', { replace: true });
         }
       } catch (e) {
         setWaitingApi(false);
@@ -66,19 +70,8 @@ export default function FormUpload({ onLogout }) {
         setBusy(false);
       }
     },
-    [loadExcel, navigate, setFlow]
+    [loadExcel, navigate, operatorRole, setFlow]
   );
-
-  const handleLogoutFromModal = () => {
-    setGoModalOpen(false);
-    clearFlow();
-    if (onLogout) onLogout();
-  };
-
-  const handleUploadAnother = () => {
-    setGoModalOpen(false);
-    setFlow((f) => ({ ...f, outcome: null, fullDashboard: false }));
-  };
 
   const onFile = (e) => {
     const f = e.target.files?.[0];
@@ -89,20 +82,40 @@ export default function FormUpload({ onLogout }) {
   return (
     <div className="form-upload-page">
       <FormProcessingOverlay active={processing} currentStepIndex={procStep} waitingOnApi={waitingApi} />
-      <GoSuccessModal
-        open={goModalOpen}
-        onLogout={handleLogoutFromModal}
-        onUploadAnother={handleUploadAnother}
-      />
 
       <div className="form-upload-card">
         <h1 className="form-upload-title">Package quality form</h1>
         <p className="form-upload-lead">
-          Upload a completed JOB AID (FL-5883 style). After upload you will see an <strong>MFG Pro+</strong> style
-          scheduler animation, then we <strong>extract text</strong> and <strong>classify</strong> as{' '}
-          <strong>Go</strong> or <strong>No-Go</strong>. <strong>Go</strong> shows confirmation and log out;{' '}
-          <strong>No-Go</strong> opens Executive Summary → Anomalies → RCA → Recommendations → Planned Downtime.
+          Choose your <strong>line operator lens</strong>, then upload a JOB AID (FL-5883 style). The demo classifies{' '}
+          <strong>Go</strong> vs <strong>No-Go</strong>. <strong>Go</strong> opens Executive summary for a healthy-line
+          snapshot with an option to upload another form. <strong>No-Go</strong> requires{' '}
+          <strong>supervisor approval (HITL)</strong> on Executive summary before Anomalies → RCA → Recommendations →
+          Planned downtime unlock — closing the gap vs MFG Pro for packaging vs processing perspectives.
         </p>
+
+        <div className="form-upload-role" role="group" aria-label="Operator role">
+          <span className="form-upload-role-label">Operator role</span>
+          <div className="form-upload-role-toggle">
+            <button
+              type="button"
+              className={`form-upload-role-btn ${operatorRole === OPERATOR_ROLES.processing ? 'active' : ''}`}
+              onClick={() => setOperatorRole(OPERATOR_ROLES.processing)}
+              disabled={busy}
+            >
+              <span className="form-upload-role-title">Processing line</span>
+              <span className="form-upload-role-desc">Fryer, slicer, seasoning, upstream thermal</span>
+            </button>
+            <button
+              type="button"
+              className={`form-upload-role-btn ${operatorRole === OPERATOR_ROLES.packaging ? 'active' : ''}`}
+              onClick={() => setOperatorRole(OPERATOR_ROLES.packaging)}
+              disabled={busy}
+            >
+              <span className="form-upload-role-title">Packaging line</span>
+              <span className="form-upload-role-desc">Palletizer, case sealer, conveyors, WMS handoff</span>
+            </button>
+          </div>
+        </div>
 
         <label className="form-upload-drop">
           <input type="file" accept="image/*,.pdf,.svg" disabled={busy} onChange={onFile} />

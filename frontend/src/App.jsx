@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Login from './components/Login/Login';
 import DashboardStepNav from './components/Layout/DashboardStepNav';
 import Header from './components/Layout/Header';
@@ -18,22 +18,33 @@ import './App.css';
 function HomeRedirect() {
   const { flow } = useAppFlow();
   if (!flow.outcome) return <Navigate to="/upload" replace />;
-  if (flow.outcome === 'go' && !flow.fullDashboard) {
-    return <Navigate to="/upload" replace />;
-  }
   return <Navigate to="/executive-summary" replace />;
 }
 
-function RequireDashboard({ children }) {
+/**
+ * Go path & pre-HITL No-Go: executive summary only. After HITL on No-Go, all assessment tabs allowed.
+ */
+function RequireAssessmentAccess({ children }) {
   const { flow } = useAppFlow();
-  if (flow.outcome === 'go' && !flow.fullDashboard) {
+  const location = useLocation();
+  const path = location.pathname;
+
+  const execOnly =
+    flow.outcome === 'go' || (flow.outcome === 'no_go' && !flow.hitlApproved);
+
+  if (execOnly && path !== '/executive-summary') {
+    return <Navigate to="/executive-summary" replace />;
+  }
+
+  if (!flow.outcome && path !== '/upload') {
     return <Navigate to="/upload" replace />;
   }
+
   return children;
 }
 
 function AuthenticatedShell({ user, onLogout }) {
-  const { showNavBar } = useAppFlow();
+  const { showNavBar, flow } = useAppFlow();
   const [selectedMonth, setSelectedMonth] = useState('Feb');
   const [selectedYear, setSelectedYear] = useState(2023);
   const [filters, setFilters] = useState({
@@ -67,6 +78,9 @@ function AuthenticatedShell({ user, onLogout }) {
         selectedMonth={selectedMonth}
         selectedYear={selectedYear}
         filters={filters}
+        operatorRole={flow.operatorRole}
+        qcOutcome={flow.outcome}
+        hitlApproved={flow.hitlApproved}
       />
       <div className="App" style={appBgStyle}>
         <div style={bgOverlayStyle} />
@@ -83,71 +97,71 @@ function AuthenticatedShell({ user, onLogout }) {
         {showNavBar ? <DashboardStepNav /> : null}
         <div className={`main-content ${showNavBar ? 'main-content--step-nav' : ''}`}>
           <Routes>
-            <Route path="/upload" element={<FormUpload onLogout={onLogout} />} />
+            <Route path="/upload" element={<FormUpload />} />
             <Route path="/" element={<HomeRedirect />} />
             <Route
               path="/executive-summary"
               element={
-                <RequireDashboard>
+                <RequireAssessmentAccess>
                   <ExecutiveSummary
                     selectedMonth={selectedMonth}
                     selectedYear={selectedYear}
                     filters={filters}
                     onFiltersChange={setFilters}
                   />
-                </RequireDashboard>
+                </RequireAssessmentAccess>
               }
             />
             <Route
               path="/anomalies"
               element={
-                <RequireDashboard>
+                <RequireAssessmentAccess>
                   <Anomalies
                     selectedMonth={selectedMonth}
                     selectedYear={selectedYear}
                     filters={filters}
                     onFiltersChange={setFilters}
                   />
-                </RequireDashboard>
+                </RequireAssessmentAccess>
               }
             />
             <Route
               path="/root-cause"
               element={
-                <RequireDashboard>
+                <RequireAssessmentAccess>
                   <RootCauseAnalysis
                     selectedMonth={selectedMonth}
                     selectedYear={selectedYear}
                     filters={filters}
                     onFiltersChange={setFilters}
                   />
-                </RequireDashboard>
+                </RequireAssessmentAccess>
               }
             />
             <Route
               path="/recommendations"
               element={
-                <RequireDashboard>
+                <RequireAssessmentAccess>
                   <Recommendations
                     selectedMonth={selectedMonth}
                     selectedYear={selectedYear}
                     filters={filters}
                     onFiltersChange={setFilters}
                   />
-                </RequireDashboard>
+                </RequireAssessmentAccess>
               }
             />
             <Route
               path="/maintenance"
               element={
-                <RequireDashboard>
+                <RequireAssessmentAccess>
                   <MaintenanceSchedule
                     selectedMonth={selectedMonth}
                     selectedYear={selectedYear}
                     filters={filters}
                     onFiltersChange={setFilters}
                   />
-                </RequireDashboard>
+                </RequireAssessmentAccess>
               }
             />
           </Routes>
@@ -172,7 +186,7 @@ function AppInner() {
   }, [isAuthenticated, setRoutePath, setPageTitle, setUiContext]);
 
   const handleLogin = (userData) => {
-    setFlow({ outcome: null, fullDashboard: false });
+    setFlow({ outcome: null, operatorRole: null, hitlApproved: false });
     setUser(userData);
     setIsAuthenticated(true);
   };

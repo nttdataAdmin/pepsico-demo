@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { getAnomalies as getMockAnomalies } from '../../data/mockData';
+import { getAnomalies as getMockAnomalies, applyRoleTransformToAnomalies } from '../../data/mockData';
 import { getAnomalies as fetchAnomaliesApi, getAnomalyAgentBriefing } from '../../services/api';
 import { normalizeAnomalyRows } from '../../utils/anomalyTelemetry';
 import VibrationChart from './VibrationChart';
@@ -10,6 +10,7 @@ import { DataFeedHint, AnomalySignalsPanel } from '../Agentic/IntegratedDataPane
 import AnomaliesLoading from './AnomaliesLoading';
 import AnomalyAgentPanel from './AnomalyAgentPanel';
 import { useAppFlow } from '../../context/AppFlowContext';
+import { operatorRoleShort } from '../../utils/operatorRole';
 import { usePageChatKnowledge } from '../../context/ChatAssistantContext';
 import { resolveAnomalyIndicatorFeeds } from '../../utils/agenticSynthesis';
 import './Anomalies.css';
@@ -23,7 +24,7 @@ const MODEL_LABELS = {
 };
 
 const Anomalies = ({ selectedMonth, selectedYear, filters, onFiltersChange }) => {
-  const { excelBundle } = useAppFlow();
+  const { excelBundle, flow } = useAppFlow();
   const [anomalyData, setAnomalyData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [briefing, setBriefing] = useState(null);
@@ -35,6 +36,8 @@ const Anomalies = ({ selectedMonth, selectedYear, filters, onFiltersChange }) =>
   const minLoadRef = useRef(null);
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
+  const operatorRoleRef = useRef(flow.operatorRole);
+  operatorRoleRef.current = flow.operatorRole;
 
   const indicatorFeeds = useMemo(
     () => resolveAnomalyIndicatorFeeds(excelBundle || {}, filters, anomalyData),
@@ -59,13 +62,16 @@ const Anomalies = ({ selectedMonth, selectedYear, filters, onFiltersChange }) =>
     try {
       const [raw, br] = await Promise.all([fetchAnomaliesApi(f), getAnomalyAgentBriefing(f)]);
       if (!mounted.current || JSON.stringify(filtersRef.current) !== scopeKey) return;
-      setAnomalyData(normalizeAnomalyRows(raw));
+      const normalized = normalizeAnomalyRows(raw);
+      setAnomalyData(applyRoleTransformToAnomalies(normalized, operatorRoleRef.current));
       setBriefing(br);
       setDataSource('api');
     } catch (e) {
       if (!mounted.current || JSON.stringify(filtersRef.current) !== scopeKey) return;
       console.warn('Anomalies: API unavailable, using embedded demo telemetry.', e?.message || e);
-      setAnomalyData(normalizeAnomalyRows(getMockAnomalies(f)));
+      setAnomalyData(
+        normalizeAnomalyRows(getMockAnomalies(f, { operatorRole: operatorRoleRef.current }))
+      );
       setBriefing(null);
       setDataSource('mock');
     } finally {
@@ -103,7 +109,7 @@ const Anomalies = ({ selectedMonth, selectedYear, filters, onFiltersChange }) =>
       if (debounceRef.current) clearTimeout(debounceRef.current);
       if (minLoadRef.current) clearTimeout(minLoadRef.current);
     };
-  }, [filters, selectedMonth, selectedYear, loadTelemetryAndBriefing]);
+  }, [filters, selectedMonth, selectedYear, flow.operatorRole, loadTelemetryAndBriefing]);
 
   const handleAgentRefresh = useCallback(async () => {
     if (!filters.state) return;
@@ -136,9 +142,11 @@ const Anomalies = ({ selectedMonth, selectedYear, filters, onFiltersChange }) =>
         dataSource,
         loading,
         anomalyRowCount: anomalyData.length,
+        anomalyRowsSample: anomalyData.slice(0, 64),
         activeModel,
         briefing: briefingSnippet,
         indicatorFeeds,
+        operatorRole: flow.operatorRole,
       },
       null,
       2
@@ -149,10 +157,11 @@ const Anomalies = ({ selectedMonth, selectedYear, filters, onFiltersChange }) =>
     selectedYear,
     dataSource,
     loading,
-    anomalyData.length,
+    anomalyData,
     activeModel,
     briefing,
     indicatorFeeds,
+    flow.operatorRole,
   ]);
 
   usePageChatKnowledge(anomaliesChatKnowledge);
@@ -184,9 +193,9 @@ const Anomalies = ({ selectedMonth, selectedYear, filters, onFiltersChange }) =>
     <div className={`anomalies-page ${dataSource === 'api' ? 'anomalies-page--live-api' : ''}`}>
       <h2 className="page-title">Production signals</h2>
       <p className="agentic-section-intro">
-        Historian vibration and temperature streams are ingested through the API when available; the assessment
-        agent fuses the same scope into a live narrative and prioritized signals. Line stops from Excel bundles
-        still augment context below.
+        <strong>{operatorRoleShort(flow.operatorRole)}</strong> — processing operators prioritize fryer/slicer/seasoning
+        thermal-vibration coupling; packaging operators emphasize palletizer upstream accumulation and case-line stops.
+        Historian streams fuse into the agent narrative below; Excel bundles still augment context.
       </p>
 
       <AnomalyAgentPanel

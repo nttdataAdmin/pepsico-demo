@@ -5,13 +5,14 @@ import RcaTraceGraphic from './RcaTraceGraphic';
 import SelectPlaceGate from '../Layout/SelectPlaceGate';
 import { DataFeedHint, RcaCorroborationPanel } from '../Agentic/IntegratedDataPanels';
 import { useAppFlow } from '../../context/AppFlowContext';
+import { operatorRoleShort } from '../../utils/operatorRole';
 import { usePageChatKnowledge } from '../../context/ChatAssistantContext';
 import { deriveRcaFlowSnapshot } from './deriveRcaFlowSnapshot';
 import { buildRcaCorroborationPanelModel } from '../../utils/rcaCorroborationModel';
 import './RootCauseAnalysis.css';
 
 const RootCauseAnalysis = ({ selectedMonth, selectedYear, filters, onFiltersChange }) => {
-  const { excelBundle } = useAppFlow();
+  const { excelBundle, flow } = useAppFlow();
   const [rootCauseData, setRootCauseData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedPath, setSelectedPath] = useState({
@@ -32,22 +33,26 @@ const RootCauseAnalysis = ({ selectedMonth, selectedYear, filters, onFiltersChan
 
   useEffect(() => {
     loadRootCauseData();
-  }, [filters, selectedPath]);
+  }, [filters, selectedPath, flow.operatorRole]);
 
   const loadRootCauseData = () => {
     setLoading(true);
     setTimeout(() => {
-      const data = getRootCauseAnalysis({
-        ...filters,
-        rul_threshold: selectedPath.rul_threshold,
-      });
+      const roleOpts = { operatorRole: flow.operatorRole };
+      const data = getRootCauseAnalysis(
+        {
+          ...filters,
+          rul_threshold: selectedPath.rul_threshold,
+        },
+        roleOpts
+      );
       setRootCauseData(data);
       setLoading(false);
     }, 300);
   };
 
   const thresholdCrossings = useMemo(() => {
-    const anomalyData = getAnomalies(filters);
+    const anomalyData = getAnomalies(filters, { operatorRole: flow.operatorRole });
     const crossings = [];
     const assetGroups = {};
     anomalyData.forEach((item) => {
@@ -122,7 +127,7 @@ const RootCauseAnalysis = ({ selectedMonth, selectedYear, filters, onFiltersChan
       }
       return a.time.localeCompare(b.time);
     });
-  }, [filters]);
+  }, [filters, flow.operatorRole]);
 
   const rcaSnap = useMemo(() => {
     if (!rootCauseData) return null;
@@ -139,6 +144,20 @@ const RootCauseAnalysis = ({ selectedMonth, selectedYear, filters, onFiltersChan
     () => buildRcaCorroborationPanelModel(excelBundle || {}, rcaSnap),
     [excelBundle, rcaSnap]
   );
+
+  const rootCausesByAssetForChat = useMemo(() => {
+    const aid = rootCauseData?.flow?.asset_id;
+    if (!aid || typeof aid !== 'object') return null;
+    const out = {};
+    Object.entries(aid).forEach(([id, meta]) => {
+      out[id] = {
+        rul_threshold: meta?.rul_threshold,
+        root_causes: meta?.root_causes,
+        past_events_count: Array.isArray(meta?.past_events) ? meta.past_events.length : 0,
+      };
+    });
+    return out;
+  }, [rootCauseData]);
 
   const rcaChatKnowledge = useMemo(() => {
     if (!filters.state) {
@@ -160,6 +179,8 @@ const RootCauseAnalysis = ({ selectedMonth, selectedYear, filters, onFiltersChan
         hasFlowSnapshot: !!rcaSnap,
         hasCorroborationPanel: !!corroborationModel,
         rootCauseDataHint: dataHint,
+        rootCausesByAsset: rootCausesByAssetForChat,
+        operatorRole: flow.operatorRole,
       },
       null,
       2
@@ -174,6 +195,8 @@ const RootCauseAnalysis = ({ selectedMonth, selectedYear, filters, onFiltersChan
     rcaSnap,
     corroborationModel,
     rootCauseData,
+    rootCausesByAssetForChat,
+    flow.operatorRole,
   ]);
 
   usePageChatKnowledge(rcaChatKnowledge);
@@ -200,8 +223,9 @@ const RootCauseAnalysis = ({ selectedMonth, selectedYear, filters, onFiltersChan
     <div className="root-cause-page">
       <h2 className="page-title">Root cause trace</h2>
       <p className="agentic-section-intro">
-        Follow the execution flow from fleet to asset, then compare corroborating beats from pareto, equipment
-        history, and threshold crossings. Each step explains why the signal escalated—not just what changed.
+        <strong>{operatorRoleShort(flow.operatorRole)}</strong> — RCA narratives weight equipment history differently:
+        processing traces cook/seasoning chains; packaging traces palletizer and case-line fault trees. Follow the flow
+        from fleet to asset, then compare corroborating beats.
       </p>
 
       <DataFeedHint />

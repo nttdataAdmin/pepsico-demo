@@ -85,7 +85,7 @@ async def assistant_chat(request: AssistantRequest):
     kb = (request.knowledge_base or "").strip()
     try:
         snap = build_executive_assistant_snapshot(data_loader, request.ui_context, client_route=route)
-        kb = f"{kb}\n\n--- Backend dataset snapshot (use for asset counts, IDs, status, samples) ---\n{snap}"
+        kb = f"{kb}\n\n--- Server grounding (packaging CSV/JSON snapshot, or processing-lens instruction) ---\n{snap}"
     except Exception as e:
         kb = f"{kb}\n\n(Backend data snapshot failed: {e})"
 

@@ -16,7 +16,7 @@ export function ChatAssistantProvider({ children, routePath = '/login' }) {
   const mergedKnowledgeBase = useMemo(() => {
     const base = getChatKnowledgeForRoute(routePathState);
     if (!dynamicKnowledge || !String(dynamicKnowledge).trim()) return base;
-    return `${base}\n\n--- Current screen data (live) ---\n${String(dynamicKnowledge).trim()}`;
+    return `${base}\n\n--- Current screen data (live — matches UI, filters, and operatorRole) ---\n${String(dynamicKnowledge).trim()}`;
   }, [routePathState, dynamicKnowledge]);
 
   const value = useMemo(

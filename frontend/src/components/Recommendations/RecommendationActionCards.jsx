@@ -56,6 +56,11 @@ const RecommendationActionCards = ({
               {rec.plant} · {rec.state} · {rec.month} {rec.year}
             </p>
             <p className="rec-action-type">{rec.asset_type}</p>
+            {rec.recommendation_engine ? (
+              <span className="rec-engine-pill" title="Role-selected recommendation engine">
+                {rec.recommendation_engine === 'packaging_line' ? 'Packaging-line engine' : 'Processing-line engine'}
+              </span>
+            ) : null}
             {rec.criticality ? (
               <p className="rec-action-criticality">Criticality: {rec.criticality}</p>
             ) : null}

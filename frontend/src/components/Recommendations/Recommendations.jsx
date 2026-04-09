@@ -5,9 +5,12 @@ import RecommendationActionCards from './RecommendationActionCards';
 import SelectPlaceGate from '../Layout/SelectPlaceGate';
 import { DataFeedHint, OperationalActionsPanel } from '../Agentic/IntegratedDataPanels';
 import { usePageChatKnowledge } from '../../context/ChatAssistantContext';
+import { useAppFlow } from '../../context/AppFlowContext';
+import { operatorRoleShort } from '../../utils/operatorRole';
 import './Recommendations.css';
 
 const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange }) => {
+  const { flow } = useAppFlow();
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [aiRecommendation, setAiRecommendation] = useState(null);
@@ -16,7 +19,7 @@ const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange
 
   useEffect(() => {
     loadRecommendations();
-  }, [selectedMonth, selectedYear, filters]);
+  }, [selectedMonth, selectedYear, filters, flow.operatorRole]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -27,7 +30,7 @@ const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange
     }, 1000);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, selectedMonth, selectedYear]);
+  }, [filters, selectedMonth, selectedYear, flow.operatorRole]);
 
   const loadRecommendations = () => {
     setLoading(true);
@@ -54,14 +57,14 @@ const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange
       if (monthName && monthName !== selectedMonth) {
         filterParams.month = monthName;
       }
-      const data = getRecommendations(filterParams);
+      const data = getRecommendations(filterParams, { operatorRole: flow.operatorRole });
       setRecommendations(data);
       setLoading(false);
     }, 300);
   };
 
   const generateAIRecommendationsForFiltered = async () => {
-    const filteredAssets = getAssetsFiltered(filters);
+    const filteredAssets = getAssetsFiltered(filters, { operatorRole: flow.operatorRole });
     const newAIRecommendations = {};
     for (const asset of filteredAssets.slice(0, 3)) {
       try {
@@ -87,7 +90,7 @@ const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange
     }
     setLoadingAI(true);
     try {
-      const assets = getAssetsFiltered({ asset_id: assetId });
+      const assets = getAssetsFiltered({ asset_id: assetId }, { operatorRole: flow.operatorRole });
       const assetData = assets[0] || { asset_id: assetId, status: 'Unknown' };
       const recommendation = await getAIRecommendation({
         ...assetData,
@@ -117,11 +120,12 @@ const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange
         recommendationCount: recommendations.length,
         recommendationSample: recommendations.slice(0, 20),
         aiGuidanceAssetIds: Object.keys(aiRecommendations),
+        operatorRole: flow.operatorRole,
       },
       null,
       2
     );
-  }, [filters, selectedMonth, selectedYear, loading, recommendations, aiRecommendations]);
+  }, [filters, selectedMonth, selectedYear, loading, recommendations, aiRecommendations, flow.operatorRole]);
 
   usePageChatKnowledge(recChatKnowledge);
 
@@ -147,8 +151,10 @@ const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange
     <div className="recommendations-page">
       <h2 className="page-title">Prioritized actions</h2>
       <p className="agentic-section-intro">
-        Countermeasures are ranked from fused reliability, safety, and throughput signals. Open synthesized
-        guidance per asset when you need step-by-step execution detail—without leaving this view.
+        <strong>{operatorRoleShort(flow.operatorRole)}</strong> — dual recommendation engines: processing-line (fryer /
+        slicer / seasoning) vs packaging-line (palletizer / case equipment) produce different actions for the same
+        asset signal. Countermeasures fuse reliability, safety, and throughput; open synthesized guidance per asset when
+        you need execution detail.
       </p>
 
       <DataFeedHint />

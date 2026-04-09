@@ -1,6 +1,7 @@
 import { azureConfig } from '../config/azureConfig';
 import { getAnomalies } from '../data/mockData';
 import { getRootCauseAnalysis } from '../data/mockData';
+import { getSessionOperatorRole } from '../utils/operatorRole';
 
 export const getAIRecommendation = async (assetData) => {
   try {
@@ -8,8 +9,9 @@ export const getAIRecommendation = async (assetData) => {
     
     // Gather comprehensive context for the asset
     const assetId = assetData.asset_id;
-    const anomalies = getAnomalies({ asset_id: assetId });
-    const rootCauseData = getRootCauseAnalysis({ asset_id: assetId });
+    const roleOpts = { operatorRole: getSessionOperatorRole() };
+    const anomalies = getAnomalies({ asset_id: assetId }, roleOpts);
+    const rootCauseData = getRootCauseAnalysis({ asset_id: assetId }, roleOpts);
     
     // Extract relevant anomaly insights
     const anomalyInsights = anomalies.length > 0 ? {

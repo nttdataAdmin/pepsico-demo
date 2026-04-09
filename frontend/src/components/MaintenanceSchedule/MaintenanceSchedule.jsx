@@ -5,15 +5,18 @@ import MaintenanceEventCards from './MaintenanceEventCards';
 import SelectPlaceGate from '../Layout/SelectPlaceGate';
 import { DataFeedHint, DowntimeSignalsPanel } from '../Agentic/IntegratedDataPanels';
 import { usePageChatKnowledge } from '../../context/ChatAssistantContext';
+import { useAppFlow } from '../../context/AppFlowContext';
+import { operatorRoleShort } from '../../utils/operatorRole';
 import './MaintenanceSchedule.css';
 
 const MaintenanceSchedule = ({ selectedMonth, selectedYear, filters, onFiltersChange }) => {
+  const { flow } = useAppFlow();
   const [schedule, setSchedule] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadSchedule();
-  }, [selectedMonth, selectedYear, filters]);
+  }, [selectedMonth, selectedYear, filters, flow.operatorRole]);
 
   const loadSchedule = () => {
     setLoading(true);
@@ -40,7 +43,7 @@ const MaintenanceSchedule = ({ selectedMonth, selectedYear, filters, onFiltersCh
       if (monthName && monthName !== selectedMonth) {
         filterParams.month = monthName;
       }
-      const data = getMaintenanceSchedule(filterParams);
+      const data = getMaintenanceSchedule(filterParams, { operatorRole: flow.operatorRole });
       setSchedule(data);
       setLoading(false);
     }, 300);
@@ -58,11 +61,12 @@ const MaintenanceSchedule = ({ selectedMonth, selectedYear, filters, onFiltersCh
         loading,
         scheduledWorkOrderCount: schedule.length,
         scheduleSample: schedule.slice(0, 20),
+        operatorRole: flow.operatorRole,
       },
       null,
       2
     );
-  }, [filters, selectedMonth, selectedYear, loading, schedule]);
+  }, [filters, selectedMonth, selectedYear, loading, schedule, flow.operatorRole]);
 
   usePageChatKnowledge(maintChatKnowledge);
 
@@ -88,8 +92,9 @@ const MaintenanceSchedule = ({ selectedMonth, selectedYear, filters, onFiltersCh
     <div className="maintenance-schedule-page">
       <h2 className="page-title">Planned Downtime</h2>
       <p className="agentic-section-intro">
-        Planned downtime and other OEE-impacting events are summarized first; scheduled work orders follow so crews see
-        recent loss events and what is scheduled to restore capability.
+        <strong>{operatorRoleShort(flow.operatorRole)}</strong> — maintenance windows are interpreted through your line:
+        processing focuses on fryer/slicer PM chains; packaging prioritizes palletizer and case-line mechanicals. Planned
+        downtime and OEE-impacting events are summarized first, then work orders.
       </p>
 
       <DataFeedHint />

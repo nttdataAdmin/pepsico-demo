@@ -20,6 +20,29 @@ def classify_from_filename(filename: str) -> Optional[str]:
     if not filename:
         return None
     lower = filename.lower().replace("\\", "/").split("/")[-1]
+    # Demo sample photos (exact stem; any common extension)
+    base, _dot, ext = lower.rpartition(".")
+    stem = base if ext in (
+        "png",
+        "jpg",
+        "jpeg",
+        "webp",
+        "gif",
+        "bmp",
+        "tif",
+        "tiff",
+        "pdf",
+        "svg",
+    ) else lower
+    if stem == "img7719":
+        return "go"
+    if stem == "img7720":
+        return "no_go"
+    # Short demo filenames (e.g. go.png / nogo.png in repo root)
+    if stem == "go":
+        return "go"
+    if stem == "nogo":
+        return "no_go"
     if "nogo" in lower or "no_go" in lower or "no-go" in lower:
         return "no_go"
     # Handwritten FL-5883 demo assets

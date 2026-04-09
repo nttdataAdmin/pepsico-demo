@@ -37,7 +37,6 @@ export default function FormProcessingOverlay({ active, currentStepIndex, waitin
             </li>
           ))}
         </ul>
-        {waitingOnApi && <p className="mfg-wait">Finalizing with live API…</p>}
       </div>
     </div>
   );

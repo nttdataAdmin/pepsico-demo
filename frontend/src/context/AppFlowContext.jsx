@@ -1,20 +1,32 @@
 import React, { createContext, useCallback, useContext, useMemo, useState, useEffect } from 'react';
 import { getSuperExcel } from '../services/api';
+import { normalizeOperatorRole } from '../utils/operatorRole';
 
 const STORAGE_KEY = 'pepsico_flow';
 const EXCEL_CACHE_KEY = 'pepsico_excel_cache';
 
+function defaultFlow() {
+  return {
+    outcome: null,
+    operatorRole: null,
+    hitlApproved: false,
+  };
+}
+
 function readFlow() {
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
-    if (!raw) return { outcome: null, fullDashboard: false };
+    if (!raw) return defaultFlow();
     const o = JSON.parse(raw);
-    return {
-      outcome: o.outcome ?? null,
-      fullDashboard: !!o.fullDashboard,
-    };
+    const outcome = o.outcome ?? null;
+    const operatorRole = normalizeOperatorRole(o.operatorRole);
+    let hitlApproved = !!o.hitlApproved;
+    if (outcome === 'no_go' && o.fullDashboard === true && o.hitlApproved === undefined) {
+      hitlApproved = true;
+    }
+    return { outcome, operatorRole, hitlApproved };
   } catch {
-    return { outcome: null, fullDashboard: false };
+    return defaultFlow();
   }
 }
 
@@ -41,7 +53,7 @@ export function AppFlowProvider({ children }) {
   const clearFlow = useCallback(() => {
     sessionStorage.removeItem(STORAGE_KEY);
     sessionStorage.removeItem(EXCEL_CACHE_KEY);
-    setFlowState({ outcome: null, fullDashboard: false });
+    setFlowState(defaultFlow());
   }, []);
 
   const loadExcel = useCallback(async (force = false) => {
@@ -74,7 +86,8 @@ export function AppFlowProvider({ children }) {
     loadExcel(false);
   }, [loadExcel]);
 
-  const showNavBar = flow.outcome === 'no_go' || flow.fullDashboard;
+  /** Full 5-tab bar only after No-Go supervisor release */
+  const showNavBar = flow.outcome === 'no_go' && flow.hitlApproved;
 
   const value = useMemo(
     () => ({

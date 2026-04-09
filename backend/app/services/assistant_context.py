@@ -23,12 +23,32 @@ def _status_breakdown(rows: List[Dict[str, Any]]) -> Dict[str, int]:
     return out
 
 
+def _processing_lens_snapshot() -> str:
+    """Server CSV/JSON match packaging mock; UI uses separate processing dataset — avoid contradicting the client."""
+    pack = {
+        "operator_lens": "processing",
+        "assistant_instruction": (
+            "This session is PROCESSING line operator lens. The browser shows an embedded processing-specific dataset "
+            "(assets, anomalies, RCA, recommendations, maintenance) that differs from packaging. "
+            "The KNOWLEDGE BASE block titled 'Current screen data (live)' is authoritative for every fact about what "
+            "the user sees — asset IDs, statuses, RUL, anomaly samples, work orders, and root-cause causes. "
+            "Do not invent packaging-line narratives (palletizer, case sealer) when the screen data describes "
+            "fryer, thermal oil, seasoning train, etc."
+        ),
+    }
+    return json.dumps(pack, indent=2)
+
+
 def build_executive_assistant_snapshot(
     data_loader: DataLoader,
     ui_context: Optional[Dict[str, Any]],
     client_route: str = "",
 ) -> str:
     ctx = ui_context or {}
+    op_role = str(ctx.get("operatorRole") or "packaging").strip().lower()
+    if op_role == "processing":
+        return _processing_lens_snapshot()
+
     filters = ctx.get("filters") or {}
     state = filters.get("state")
     plant = filters.get("plant")
@@ -51,6 +71,7 @@ def build_executive_assistant_snapshot(
 
     pack: Dict[str, Any] = {
         "app": "PepsiCo Management System demo",
+        "operator_lens": "packaging",
         "client_route": client_route,
         "data_sources": "backend/data: assets.json, anomalies.csv, recommendations.csv, maintenance.csv, root_causes.json",
         "period_ui": {"month": ctx.get("selectedMonth"), "year": ctx.get("selectedYear")},

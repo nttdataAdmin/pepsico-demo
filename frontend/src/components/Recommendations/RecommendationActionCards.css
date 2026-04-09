@@ -50,6 +50,19 @@
   border-radius: 3px;
 }
 
+.rec-engine-pill {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.45rem;
+  border-radius: 4px;
+  background: #e8f0fe;
+  color: #003087;
+}
+
 .rec-action-loc,
 .rec-action-type,
 .rec-action-criticality {

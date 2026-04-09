@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from typing import Any, Dict, List, Optional
 
 from openai import AzureOpenAI
@@ -7,6 +8,20 @@ from openai import AzureOpenAI
 from app.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+def _assistant_reply_plain_text(text: str) -> str:
+    """Strip common Markdown so chat reads as plain operational prose."""
+    if not text:
+        return text
+    s = text.strip()
+    s = re.sub(r"\*\*([^*]+)\*\*", r"\1", s)
+    s = re.sub(r"(?<!\*)\*([^*]+)\*(?!\*)", r"\1", s)
+    s = re.sub(r"__([^_]+)__", r"\1", s)
+    s = re.sub(r"`([^`]+)`", r"\1", s)
+    s = re.sub(r"^#{1,6}\s+", "", s, flags=re.MULTILINE)
+    s = re.sub(r"\[(.*?)\]\([^)]+\)", r"\1", s)
+    return s.strip()
 
 
 def _completion_budget_kwargs(limit: int) -> Dict[str, int]:
@@ -203,18 +218,19 @@ Keep total length under 280 words. Professional, direct tone."""
             meta_parts.append("UI context (filters, selections):\n" + json.dumps(ui_context, indent=2)[:12000])
         meta_block = "\n".join(meta_parts)
 
-        system = f"""You are the in-app assistant for the PepsiCo Management System demo — a maintenance, asset health, and operations analytics application.
+        system = f"""You are a PepsiCo operations and reliability assistant helping with a maintenance and asset-health demo.
 
-The user may be on Executive summary, Anomalies, Root cause, Recommendations, or Maintenance (see SESSION META route). Tailor answers to that step when relevant.
+SESSION META (internal only — do not quote route names or meta labels to the user): route and filters tell you which step they are on and whether operatorRole is processing (fryer, thermal oil, seasoning train) or packaging (palletizer, case line, conveyors). Use that vocabulary naturally in answers.
 
-You must answer using:
-1) The KNOWLEDGE BASE below (authoritative for what this screen shows and how to use the app).
-2) The user's questions and conversation history.
-3) General PepsiCo-style maintenance and reliability best practices only when they do not contradict the knowledge base.
+Internal grounding (never mention these mechanics to the user):
+- Use the facts in the KNOWLEDGE BASE block below to stay aligned with the same numbers, assets, and events as the demo session. Prefer the block titled with "Current screen data" when it conflicts with the shorter server grounding section. For processing lens, ignore server rows that imply a different story than that block.
+- Do not tell the user that information comes from "the UI", "the screen", "the dashboard", "what you see", "the app shows", "live data", "JSON", "knowledge base", "snapshot", or similar. Answer in plain operational language as if you already know the plant situation.
 
-If something is not in the knowledge base or you are unsure, say so briefly and suggest what the user could check on screen or in the docs.
-
-Keep answers clear and scannable (short paragraphs or bullets when helpful). No raw JSON dumps unless the user asks for data.
+Response style:
+- Write in plain text only. Do not use Markdown: no asterisks for bold or italics, no hash headings, no backticks, no bullet asterisks (use simple lines starting with a dash or numbered lines like 1. 2. if you need lists).
+- Be direct, professional, and readable: short paragraphs and simple lists are fine.
+- Do not paste raw JSON unless the user explicitly asks for raw data.
+- If something is not in the provided facts, say briefly that the detail is not available for this session or view — do not instruct them to "look at the screen" or "check the UI".
 
 --- KNOWLEDGE BASE ---
 {knowledge_base[:120000]}
@@ -243,7 +259,8 @@ Keep answers clear and scannable (short paragraphs or bullets when helpful). No 
                 temperature=0.45,
                 **_completion_budget_kwargs(min(cap, 8192)),
             )
-            return (response.choices[0].message.content or "").strip() or "(No response)"
+            raw = (response.choices[0].message.content or "").strip()
+            return _assistant_reply_plain_text(raw) or "(No response)"
         except Exception as e:
             logger.warning("Assistant chat failed: %s", e)
             return f"Unable to reach the assistant: {e}"

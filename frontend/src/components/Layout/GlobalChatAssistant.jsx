@@ -27,7 +27,7 @@ function ChatBubbleIcon() {
 }
 
 const WELCOME =
-  'Hi — I am your PepsiCo Management System assistant. Ask about this step, the fleet, or the demo data (the server sends a dataset snapshot with each reply). What would you like to know?';
+  'Hi — I am your PepsiCo Management System assistant. Ask about fleet health, production signals, root cause, recommendations, or planned work. I stay aligned with your session, including processing vs packaging line context. What would you like to know?';
 
 /** Login, upload, and home redirect (no stable dashboard step) */
 const CHAT_DISABLED_ROUTES = new Set(['/login', '/upload', '/']);

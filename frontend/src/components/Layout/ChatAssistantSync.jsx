@@ -25,14 +25,28 @@ export function ChatRouteSync() {
   return null;
 }
 
-/** Pushes global filters/month/year into assistant API ui_context. */
-export function ChatUiSync({ selectedMonth, selectedYear, filters }) {
+/** Pushes global filters/month/year + QC flow context into assistant API ui_context. */
+export function ChatUiSync({
+  selectedMonth,
+  selectedYear,
+  filters,
+  operatorRole,
+  qcOutcome,
+  hitlApproved,
+}) {
   const { setUiContext } = useChatAssistant();
 
   useEffect(() => {
-    setUiContext({ selectedMonth, selectedYear, filters });
+    setUiContext({
+      selectedMonth,
+      selectedYear,
+      filters,
+      operatorRole,
+      qcOutcome,
+      hitlApproved,
+    });
     return () => setUiContext(null);
-  }, [selectedMonth, selectedYear, filters, setUiContext]);
+  }, [selectedMonth, selectedYear, filters, operatorRole, qcOutcome, hitlApproved, setUiContext]);
 
   return null;
 }
