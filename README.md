@@ -1,151 +1,102 @@
-# PEPSICO MANAGEMENT SYSTEM
+# PepsiCo Management System (demo)
 
-A comprehensive asset management dashboard for PepsiCo with AI-powered recommendations and analysis capabilities.
+A single application for asset health, production signals, and maintenance coordination. The UI walks an operator from a quality gate through analytics and planned work, with a context-aware assistant on each dashboard step.
 
-## Features
+## What you get
 
-- **Executive Summary**: Overview of all assets with status summary, map visualization, and detailed summary panel
-- **Anomalies**: Condition monitoring with vibration and temperature charts
-- **Root Cause Analysis**: Interactive flow visualization from assets to root causes
-- **Recommendations**: AI-powered recommendations for asset maintenance
-- **Maintenance Schedule**: Scheduled and in-progress maintenance tasks
+- **Quality gate** — Upload a form image; the API classifies **Go** vs **No-Go** and routes the session (executive-only positive path vs full analytics with supervisor release).
+- **Operator lens** — **Processing** (fryer, thermal, seasoning story) vs **packaging** (palletizer, case line, conveyors). The same navigation uses lens-specific scenarios so charts, queues, and narratives stay coherent.
+- **Executive summary** — Fleet KPIs, site map, and (on No-Go after approval) deeper tabs. Go shows a simplified healthy-line snapshot.
+- **Agentic-style panels** — Cross-feed hints and narrative strips (downtime, actions, corroboration) sit beside primary tables and charts so each step feels like fused operations data, not an isolated screen.
+- **CMMS-shaped records** — Maintenance and recommendation rows share the same identifiers (**Eventid**, **Line**, **Technicianid**, **Workcenterroles**, **Issuetype**) so downtime narrative, work orders, and action queue read as one routing model.
+- **In-app assistant** — On dashboard routes, the assistant receives the current page JSON, filters, QC state, and operator lens. Answers follow what is on screen; optional server snapshots supplement the packaging-aligned export when the lens is packaging.
 
-## Technology Stack
+## Dashboard flow
+
+1. **Login** → **Upload** (role + form) → **Executive summary**  
+2. **No-Go** — Supervisor **HITL** unlocks **Anomalies** → **Root cause** → **Recommendations** → **Planned downtime**  
+3. **Go** — Short executive path; optional return to upload for another cycle  
+
+Telemetry and lists respect header filters (state, plant, period) where applicable.
+
+## Technology
+
+| Layer | Stack |
+|--------|--------|
+| API | FastAPI, Python 3.9+, Uvicorn |
+| UI | React 18, React Router, Recharts |
+| AI | Azure OpenAI (assistant, recommendations, optional narratives) |
+| Optional | Microsoft Graph / SMTP for maintenance notifications; Azure Document Intelligence for OCR on uploads |
+
+Backend reads scenario assets from `backend/data` (JSON/CSV). The UI also uses embedded scenario tables for lens-specific views where the story diverges from the server file layout.
+
+## Setup
 
 ### Backend
-- FastAPI
-- Python 3.9+
-- Azure OpenAI integration
-- CSV/JSON data loading (no pandas required)
 
-### Frontend
-- React 18
-- React Router
-- Recharts for data visualization
-- Axios for API calls
-
-## Setup Instructions
-
-### Backend Setup
-
-1. Navigate to the backend directory:
 ```bash
 cd backend
-```
-
-2. Create a virtual environment (recommended):
-```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-3. Install dependencies:
-```bash
+# Windows: venv\Scripts\activate
+# macOS/Linux: source venv/bin/activate
 pip install -r requirements.txt
-```
-
-4. Create a `.env` file from the example:
-```bash
 cp .env.example .env
 ```
 
-5. Configure your Azure OpenAI credentials in `.env`:
-```
-AZURE_ENDPOINT=https://your-endpoint.openai.azure.com/
-AZURE_DEPLOYMENT=gpt-4.1
-AZURE_API_KEY=your-api-key-here
-AZURE_API_VERSION=2024-08-01-preview
-```
+Edit `.env` with your **Azure** endpoint, deployment, API key, and API version. Start the API on **9898**; bind to `0.0.0.0` if other machines should call it:
 
-6. Run the backend server (use `127.0.0.1` on Windows if `0.0.0.0` fails with a socket permission error):
 ```bash
-# Windows PowerShell (from backend folder)
-.\venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 9898 --reload
+python -m uvicorn app.main:app --host 0.0.0.0 --port 9898 --reload
 ```
 
-The API will be available at `http://127.0.0.1:9898`. The dev frontend proxies `/api` there via `package.json` → `proxy`.
+Windows: `run_dev.bat` is provided for the same idea.
 
-### Frontend Setup
+### Frontend
 
-1. Navigate to the frontend directory:
 ```bash
 cd frontend
-```
-
-2. Install dependencies:
-```bash
 npm install
-```
-
-3. Dev settings are in `.env.development` (port **3002**, API proxied to the backend — do not set `REACT_APP_API_URL` unless you need a direct URL). If webpack fails with `allowedHosts`, `DANGEROUSLY_DISABLE_HOST_CHECK=true` is already set there for local dev.
-
-4. Start the development server:
-```bash
 npm start
 ```
 
-Open **http://localhost:3002** (or whatever `PORT` you set).
+Default dev app: **9897** (`frontend/.env.development`). The dev server proxies `/api` to the backend on **127.0.0.1:9898** unless `REACT_APP_API_URL` overrides it.
 
-## Project Structure
+Open the app at `http://localhost:9897` (or your host IP on the same ports if `HOST=0.0.0.0`). Allow firewall access to **9897** and **9898** when testing from another device.
+
+## Project layout
 
 ```
-pepsico/
+pepsico-demo/
 ├── backend/
-│   ├── app/
-│   │   ├── api/
-│   │   │   ├── routes/      # API endpoints
-│   │   │   └── models.py    # Pydantic models
-│   │   ├── services/        # Business logic
-│   │   ├── config.py        # Configuration
-│   │   └── main.py          # FastAPI app
-│   ├── data/                # Mock data files
+│   ├── app/           # FastAPI app, routes, services
+│   ├── data/          # Scenario assets (assets, anomalies, RCA, maintenance, recommendations)
 │   └── requirements.txt
 ├── frontend/
-│   ├── src/
-│   │   ├── components/      # React components
-│   │   ├── services/        # API client
-│   │   └── App.jsx
-│   └── package.json
+│   └── src/           # Pages, agentic panels, assistant context, scenario data helpers
 └── README.md
 ```
 
-## API Endpoints
+## API (summary)
 
-- `GET /api/assets` - Get all assets with optional filters
-- `GET /api/assets/summary` - Get asset status summary
-- `GET /api/anomalies` - Get anomaly monitoring data
-- `GET /api/root-cause` - Get root cause analysis data
-- `GET /api/recommendations` - Get recommendations
-- `GET /api/maintenance` - Get maintenance schedule
-- `POST /api/ai/recommendations` - Get AI-generated recommendations
-- `POST /api/ai/analysis` - Get AI analysis for specific asset
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/api/assets`, `/api/assets/summary` | Fleet registry and counts |
+| GET | `/api/anomalies` | Condition monitoring rows |
+| GET | `/api/root-cause` | RCA structure |
+| GET | `/api/recommendations` | Action queue source |
+| GET | `/api/maintenance` | Schedule source |
+| POST | `/api/forms/classify` | Go / No-Go from upload |
+| POST | `/api/ai/assistant` | Dashboard assistant (grounded in page + optional server snapshot) |
+| POST | `/api/ai/recommendations`, `/api/ai/analysis` | Targeted LLM helpers |
 
-## Data Files
+Interactive docs: `http://<host>:9898/docs` when the server is running.
 
-Mock data is stored in:
-- `backend/data/assets.json` - Asset master data
-- `backend/data/anomalies.csv` - Vibration/temperature monitoring data
-- `backend/data/root_causes.json` - Root cause probability data
-- `backend/data/recommendations.csv` - Recommendations data
-- `backend/data/maintenance.csv` - Maintenance schedule data
+## Configuration notes
 
-## AI Integration
-
-The dashboard integrates with Azure OpenAI to provide:
-- Dynamic recommendations based on asset status and criticality
-- Contextual analysis for specific assets
-- Root cause insights
-
-Configure your Azure OpenAI credentials in the backend `.env` file to enable AI features.
-
-## Development
-
-- Backend runs on port 8000 by default
-- Frontend runs on port 6900 by default
-- CORS is configured to allow frontend-backend communication
-- Hot reload is enabled for both backend and frontend during development
+- **Upload classification** — Filename hints (e.g. `go.png` / `nogo.png`) and optional OCR when Document Intelligence is enabled.  
+- **Assistant** — Requires Azure credentials on the backend; the UI still renders if the model is unavailable.  
+- **Maintenance email** — Graph or SMTP env vars on the API host; optional default recipient via `REACT_APP_MAINTENANCE_NOTIFY_TO` in the frontend env.  
 
 ## License
 
-This project is for demonstration purposes.
-
+Demonstration use only.
