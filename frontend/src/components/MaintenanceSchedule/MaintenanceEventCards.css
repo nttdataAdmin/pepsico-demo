@@ -70,6 +70,23 @@
   color: #5a6570;
 }
 
+.maint-event-cmms {
+  margin: 0.5rem 0 0;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(0, 42, 94, 0.08);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: #5a6570;
+  text-align: left;
+}
+
+.maint-wo-modal-cmms {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #3d4d5c;
+}
+
 .maint-wo-modal-backdrop {
   position: fixed;
   inset: 0;

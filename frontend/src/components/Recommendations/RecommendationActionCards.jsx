@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatCmmsRecommendationRecordLine } from '../../data/mockData';
 import './RecommendationsTable.css';
 import './RecommendationActionCards.css';
 
@@ -64,6 +65,7 @@ const RecommendationActionCards = ({
             {rec.criticality ? (
               <p className="rec-action-criticality">Criticality: {rec.criticality}</p>
             ) : null}
+            <p className="rec-action-cmms">{formatCmmsRecommendationRecordLine(rec)}</p>
             <p className="rec-action-text">{rec.recommendation || 'Review asset context and open synthesized guidance.'}</p>
             <button
               type="button"
@@ -131,6 +133,19 @@ const RecommendationActionCards = ({
                     );
                   }
                   if (line.match(/^\d+[\.\)]\s/) || line.match(/^[-*•]\s/)) {
+                    if (line.includes('*') && !line.includes('**')) {
+                      const parts = line.split(/(\*[^*]+\*)/g);
+                      return (
+                        <div key={index} className="ai-step">
+                          {parts.map((part, i) => {
+                            if (part.length > 2 && part.startsWith('*') && part.endsWith('*')) {
+                              return <strong key={i}>{part.slice(1, -1)}</strong>;
+                            }
+                            return <span key={i}>{part}</span>;
+                          })}
+                        </div>
+                      );
+                    }
                     return (
                       <div key={index} className="ai-step">
                         {line.trim()}

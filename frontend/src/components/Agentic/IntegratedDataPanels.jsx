@@ -5,6 +5,7 @@ import {
   buildAnomalySignals,
   buildActionItems,
   buildDowntimeEvents,
+  buildScheduleDowntimeEvents,
 } from '../../utils/agenticSynthesis';
 import { buildRcaCorroborationPanelModel } from '../../utils/rcaCorroborationModel';
 import './IntegratedDataPanels.css';
@@ -416,9 +417,14 @@ export function OperationalActionsPanel() {
   );
 }
 
-export function DowntimeSignalsPanel() {
+export function DowntimeSignalsPanel({ schedule }) {
   const { excelBundle } = useAppFlow();
-  const events = useMemo(() => buildDowntimeEvents(excelBundle || {}), [excelBundle]);
+  const events = useMemo(() => {
+    const fromSchedule = schedule?.length ? buildScheduleDowntimeEvents(schedule) : [];
+    const fromExcel = buildDowntimeEvents(excelBundle || {});
+    if (fromSchedule.length) return [...fromSchedule, ...fromExcel].slice(0, 30);
+    return fromExcel;
+  }, [excelBundle, schedule]);
 
   if (!events.length) {
     return (

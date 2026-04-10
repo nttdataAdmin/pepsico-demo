@@ -99,7 +99,7 @@ const MaintenanceSchedule = ({ selectedMonth, selectedYear, filters, onFiltersCh
 
       <DataFeedHint />
       <h3 className="maint-section-label">Downtime & loss narrative</h3>
-      <DowntimeSignalsPanel />
+      <DowntimeSignalsPanel schedule={schedule} />
 
       <h3 className="maint-section-label">Scheduled work orders</h3>
       <MaintenanceEventCards schedule={schedule} />

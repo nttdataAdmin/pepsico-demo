@@ -672,6 +672,130 @@ export const mockRecommendationsProcessing = [
   },
 ];
 
+/** CMMS routing: same string on Maintenance, Recommendations, and synthesis guidance (AI prompt). */
+export const ASSET_MAINTENANCE_RESPONSIBLE = {
+  'BEL-PUMP-001': 'Maintenance Supervisor + Reliability Engineer',
+  'BEL-COMP-002': 'Area Mechanic Lead + Planner',
+  'BEL-GEN-003': 'Maintenance Supervisor + EHS Officer',
+  'BEL-FAN-004': 'Maintenance Technician II + Planner',
+  'JON-GEN-001': 'Site Maintenance Manager + Electrical Specialist',
+  'JON-PUMP-002': 'Maintenance Supervisor + Process Engineer',
+  'JON-COMP-003': 'Reliability Engineer + Maintenance Supervisor',
+  'JON-FAN-004': 'Maintenance Technician I + Planner',
+};
+
+export function getResponsiblePartyForAsset(assetId) {
+  if (!assetId) return 'Maintenance Supervisor + Site Planner';
+  return ASSET_MAINTENANCE_RESPONSIBLE[assetId] || 'Maintenance Supervisor + Site Planner';
+}
+
+/** Stable M00xxx id per asset (same on maintenance narrative, work orders, recommendations). */
+const MAINT_EVENT_SERIAL = Object.fromEntries(
+  Object.keys(ASSET_MAINTENANCE_RESPONSIBLE).map((id, i) => [id, i + 1])
+);
+
+export function maintenanceEventSerialForAsset(assetId) {
+  return MAINT_EVENT_SERIAL[assetId] ?? 99;
+}
+
+export const ASSET_TECHNICIAN_ID = {
+  'BEL-PUMP-001': 'E001',
+  'BEL-COMP-002': 'E002',
+  'BEL-GEN-003': 'E003',
+  'BEL-FAN-004': 'E004',
+  'JON-GEN-001': 'E005',
+  'JON-PUMP-002': 'E006',
+  'JON-COMP-003': 'E007',
+  'JON-FAN-004': 'E008',
+};
+
+export function technicianIdForAsset(assetId) {
+  if (!assetId) return 'E099';
+  return ASSET_TECHNICIAN_ID[assetId] || 'E099';
+}
+
+export function assetIdForTechnicianId(techId) {
+  const t = String(techId || '').trim().toUpperCase();
+  if (!t) return null;
+  return Object.keys(ASSET_TECHNICIAN_ID).find((aid) => ASSET_TECHNICIAN_ID[aid] === t) || null;
+}
+
+/** Generic Line-1 / Line-2 rows from Excel — rotate same role pool as fleet assets. */
+export function workcenterrolesForGenericLineSlot(lineNumber1Based) {
+  const pool = Object.values(ASSET_MAINTENANCE_RESPONSIBLE);
+  if (!pool.length) return getResponsiblePartyForAsset(null);
+  const i = Math.max(1, Number(lineNumber1Based) || 1) - 1;
+  return pool[i % pool.length];
+}
+
+/**
+ * Excel / fused maintenance streams often omit Workcenterroles; inject using Technicianid → asset,
+ * explicit asset id in text, or Line-N → role pool (same vocabulary as recommendations).
+ */
+export function appendWorkcenterrolesToDowntimeContextLine(context) {
+  if (!context || String(context).trim() === '') return context;
+  if (/workcenterroles/i.test(context)) return context;
+
+  let roles = null;
+  const ctx = String(context);
+
+  const techMatch = ctx.match(/Technicianid:\s*(E\d{3})/i);
+  if (techMatch) {
+    const aid = assetIdForTechnicianId(techMatch[1]);
+    if (aid) roles = getResponsiblePartyForAsset(aid);
+  }
+  if (!roles) {
+    const assetMatch = ctx.match(/\b([A-Z]{3}-(?:PUMP|COMP|GEN|FAN)-\d{3})\b/);
+    if (assetMatch) roles = getResponsiblePartyForAsset(assetMatch[1]);
+  }
+  if (!roles) {
+    const lineMatch = ctx.match(/Line:\s*([^\s·]+)/i);
+    if (lineMatch) {
+      const ln = lineMatch[1].trim();
+      const m = /^line-(\d+)$/i.exec(ln);
+      if (m) roles = workcenterrolesForGenericLineSlot(parseInt(m[1], 10));
+    }
+  }
+  if (!roles) roles = getResponsiblePartyForAsset(null);
+
+  if (/\bIssuetype:/i.test(ctx)) {
+    return ctx.replace(/\s*·\s*Issuetype:/i, ` · Workcenterroles: ${roles} · Issuetype:`);
+  }
+  return `${ctx} · Workcenterroles: ${roles}`;
+}
+
+/** One CMMS export row (matches downtime panel detail style; roles embedded, no separate Responsible label). */
+export function formatCmmsMaintenanceRecordLine(item) {
+  const n = maintenanceEventSerialForAsset(item.asset_id);
+  const eventNum = `M${String(n).padStart(5, '0')}`;
+  const roles = item.responsible_party || getResponsiblePartyForAsset(item.asset_id);
+  const tech = technicianIdForAsset(item.asset_id);
+  const issue = `${item.maintenance_type || 'Scheduled work'} — ${item.status || 'open'} — ${item.asset_type || 'equipment'}`;
+  const date =
+    item.scheduled_date ||
+    (item.year != null && item.month != null && item.day != null
+      ? `${item.year}-${item.month}-${item.day}`
+      : null) ||
+    '—';
+  const dateStr = typeof date === 'string' ? date : String(date);
+  return `Eventid: ${eventNum} · Date: ${dateStr} · Line: ${item.asset_id} · Technicianid: ${tech} · Workcenterroles: ${roles} · Issuetype: ${issue}`;
+}
+
+/** Same Eventid / Technicianid / Workcenterroles pattern for recommendation queue (mapped to maint master). */
+export function formatCmmsRecommendationRecordLine(rec) {
+  const n = maintenanceEventSerialForAsset(rec.asset_id);
+  const eventNum = `M${String(n).padStart(5, '0')}`;
+  const roles = rec.responsible_party || getResponsiblePartyForAsset(rec.asset_id);
+  const tech = technicianIdForAsset(rec.asset_id);
+  const period = [rec.month, rec.year].filter(Boolean).join(' ');
+  const issue = `${rec.status || 'Unknown'} — ${rec.asset_type || 'asset'} — action queue`;
+  return `Eventid: ${eventNum} · Period: ${period || '—'} · Line: ${rec.asset_id} · Technicianid: ${tech} · Workcenterroles: ${roles} · Issuetype: ${issue}`;
+}
+
+function withResponsibleParty(row) {
+  return { ...row, responsible_party: getResponsiblePartyForAsset(row.asset_id) };
+}
+
 export const getRecommendations = (filters = {}, opts = {}) => {
   const role = resolveOperatorRole(opts);
   const source = role === 'processing' ? mockRecommendationsProcessing : mockRecommendations;
@@ -687,11 +811,12 @@ export const getRecommendations = (filters = {}, opts = {}) => {
     ...r,
     recommendation: recommendationForOperatorLens(r, role),
     recommendation_engine: role === 'packaging' ? 'packaging_line' : 'processing_line',
+    responsible_party: getResponsiblePartyForAsset(r.asset_id),
   }));
 };
 
 export const mockMaintenance = [
-  {
+  withResponsibleParty({
     year: 2023,
     month: 'February',
     day: 15,
@@ -703,8 +828,8 @@ export const mockMaintenance = [
     status: 'In Progress',
     scheduled_date: '2023-02-15',
     estimated_duration_hours: 8,
-  },
-  {
+  }),
+  withResponsibleParty({
     year: 2023,
     month: 'February',
     day: 22,
@@ -716,8 +841,8 @@ export const mockMaintenance = [
     status: 'Scheduled',
     scheduled_date: '2023-02-22',
     estimated_duration_hours: 12,
-  },
-  {
+  }),
+  withResponsibleParty({
     year: 2023,
     month: 'March',
     day: 5,
@@ -729,11 +854,11 @@ export const mockMaintenance = [
     status: 'Scheduled',
     scheduled_date: '2023-03-05',
     estimated_duration_hours: 6,
-  },
+  }),
 ];
 
 export const mockMaintenanceProcessing = [
-  {
+  withResponsibleParty({
     year: 2023,
     month: 'February',
     day: 14,
@@ -745,8 +870,8 @@ export const mockMaintenanceProcessing = [
     status: 'In Progress',
     scheduled_date: '2023-02-14',
     estimated_duration_hours: 10,
-  },
-  {
+  }),
+  withResponsibleParty({
     year: 2023,
     month: 'February',
     day: 18,
@@ -758,8 +883,8 @@ export const mockMaintenanceProcessing = [
     status: 'Scheduled',
     scheduled_date: '2023-02-18',
     estimated_duration_hours: 12,
-  },
-  {
+  }),
+  withResponsibleParty({
     year: 2023,
     month: 'February',
     day: 20,
@@ -771,8 +896,8 @@ export const mockMaintenanceProcessing = [
     status: 'Scheduled',
     scheduled_date: '2023-02-20',
     estimated_duration_hours: 14,
-  },
-  {
+  }),
+  withResponsibleParty({
     year: 2023,
     month: 'March',
     day: 2,
@@ -784,7 +909,7 @@ export const mockMaintenanceProcessing = [
     status: 'Scheduled',
     scheduled_date: '2023-03-02',
     estimated_duration_hours: 5,
-  },
+  }),
 ];
 
 export const getMaintenanceSchedule = (filters = {}, opts = {}) => {

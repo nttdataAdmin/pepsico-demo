@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { notifyMaintenanceWorkOrder } from '../../services/api';
+import { formatCmmsMaintenanceRecordLine } from '../../data/mockData';
 import './MaintenanceEventCards.css';
 
-const defaultRecipientHint =
-  (process.env.REACT_APP_MAINTENANCE_NOTIFY_TO || '').trim() || 'Uses server default if empty';
+/** Demo default recipient when env unset; override with REACT_APP_MAINTENANCE_NOTIFY_TO. */
+const DEFAULT_MAINTENANCE_NOTIFY_TO =
+  (process.env.REACT_APP_MAINTENANCE_NOTIFY_TO || '').trim() || 'ABC@pepsico.com';
 
 const MaintenanceEventCards = ({ schedule }) => {
   const [selected, setSelected] = useState(null);
-  const [recipient, setRecipient] = useState(() => (process.env.REACT_APP_MAINTENANCE_NOTIFY_TO || '').trim());
+  const [recipient, setRecipient] = useState(() => DEFAULT_MAINTENANCE_NOTIFY_TO);
   const [includeAiSummary, setIncludeAiSummary] = useState(true);
   const [sending, setSending] = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -56,7 +58,7 @@ const MaintenanceEventCards = ({ schedule }) => {
   const openForItem = (item) => {
     setSelected(item);
     setFeedback(null);
-    setRecipient((process.env.REACT_APP_MAINTENANCE_NOTIFY_TO || '').trim());
+    setRecipient(DEFAULT_MAINTENANCE_NOTIFY_TO);
   };
 
   const buildPayload = (item) => {
@@ -144,6 +146,7 @@ const MaintenanceEventCards = ({ schedule }) => {
             <p className="maint-event-cal">
               {item.month} {item.day}, {item.year}
             </p>
+            <p className="maint-event-cmms">{formatCmmsMaintenanceRecordLine(item)}</p>
           </button>
         ))}
       </div>
@@ -205,6 +208,10 @@ const MaintenanceEventCards = ({ schedule }) => {
                   {selected.estimated_duration_hours != null ? ` (~${selected.estimated_duration_hours} h)` : ''}
                 </dd>
               </div>
+              <div>
+                <dt>CMMS record</dt>
+                <dd className="maint-wo-modal-cmms">{formatCmmsMaintenanceRecordLine(selected)}</dd>
+              </div>
             </dl>
             <label className="maint-wo-modal-label" htmlFor="maint-wo-recipient">
               Recipient email (optional)
@@ -215,7 +222,7 @@ const MaintenanceEventCards = ({ schedule }) => {
               className="maint-wo-modal-input"
               value={recipient}
               onChange={(e) => setRecipient(e.target.value)}
-              placeholder={defaultRecipientHint}
+              placeholder={DEFAULT_MAINTENANCE_NOTIFY_TO}
               autoComplete="email"
             />
             {feedback && (

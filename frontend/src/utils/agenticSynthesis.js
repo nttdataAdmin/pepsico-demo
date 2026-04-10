@@ -3,6 +3,7 @@
  * Sheet routing uses excelSheetRoutes (internal); user-facing copy never references files or spreadsheets.
  */
 
+import { appendWorkcenterrolesToDowntimeContextLine, formatCmmsMaintenanceRecordLine } from '../data/mockData';
 import { sheetsForRoute } from './excelSheetRoutes';
 
 export function normKey(k) {
@@ -731,12 +732,26 @@ export function buildDowntimeEvents(bundle) {
           plant: plant || null,
           asset: asset || null,
           when: when || null,
-          context: line,
+          context: appendWorkcenterrolesToDowntimeContextLine(line),
         });
       }
     }
   }
   return events.slice(0, 30);
+}
+
+/** Planned downtime cards from mock schedule — same CMMS row shape as work-order cards (Workcenterroles embedded). */
+export function buildScheduleDowntimeEvents(schedule) {
+  if (!schedule?.length) return [];
+  return schedule.map((item, i) => ({
+    id: `sched-${item.asset_id}-${item.scheduled_date}-${i}`,
+    headline: 'Planned downtime event',
+    duration: item.estimated_duration_hours != null ? String(item.estimated_duration_hours) : null,
+    plant: item.plant,
+    asset: item.asset_id,
+    when: item.scheduled_date,
+    context: formatCmmsMaintenanceRecordLine(item),
+  }));
 }
 
 /** Demo rows when no executive-summary feeds are routed (still looks like integrated plant data). */
