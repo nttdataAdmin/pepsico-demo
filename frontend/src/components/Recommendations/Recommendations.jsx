@@ -6,11 +6,13 @@ import SelectPlaceGate from '../Layout/SelectPlaceGate';
 import { DataFeedHint, OperationalActionsPanel } from '../Agentic/IntegratedDataPanels';
 import { usePageChatKnowledge } from '../../context/ChatAssistantContext';
 import { useAppFlow } from '../../context/AppFlowContext';
+import ManagerScopeBanner from '../Layout/ManagerScopeBanner';
 import { operatorRoleShort } from '../../utils/operatorRole';
 import './Recommendations.css';
 
 const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange }) => {
   const { flow } = useAppFlow();
+  const isManager = flow.accountRole === 'manager';
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [aiRecommendation, setAiRecommendation] = useState(null);
@@ -19,9 +21,10 @@ const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange
 
   useEffect(() => {
     loadRecommendations();
-  }, [selectedMonth, selectedYear, filters, flow.operatorRole]);
+  }, [selectedMonth, selectedYear, filters, flow.operatorRole, flow.accountRole]);
 
   useEffect(() => {
+    if (isManager) return undefined;
     const timer = setTimeout(() => {
       const hasFilters = Object.keys(filters).some((key) => filters[key]);
       if (hasFilters) {
@@ -30,7 +33,7 @@ const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange
     }, 1000);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, selectedMonth, selectedYear, flow.operatorRole]);
+  }, [filters, selectedMonth, selectedYear, flow.operatorRole, isManager]);
 
   const loadRecommendations = () => {
     setLoading(true);
@@ -121,11 +124,13 @@ const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange
         recommendationSample: recommendations.slice(0, 20),
         aiGuidanceAssetIds: Object.keys(aiRecommendations),
         operatorRole: flow.operatorRole,
+        accountRole: flow.accountRole,
+        managerBreakdownScope: isManager,
       },
       null,
       2
     );
-  }, [filters, selectedMonth, selectedYear, loading, recommendations, aiRecommendations, flow.operatorRole]);
+  }, [filters, selectedMonth, selectedYear, loading, recommendations, aiRecommendations, flow.operatorRole, flow.accountRole, isManager]);
 
   usePageChatKnowledge(recChatKnowledge);
 
@@ -150,16 +155,31 @@ const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange
   return (
     <div className="recommendations-page">
       <h2 className="page-title">Prioritized actions</h2>
+      {isManager ? <ManagerScopeBanner /> : null}
       <p className="agentic-section-intro">
-        <strong>{operatorRoleShort(flow.operatorRole)}</strong> — dual recommendation engines: processing-line (fryer /
-        slicer / seasoning) vs packaging-line (palletizer / case equipment) produce different actions for the same
-        asset signal. Countermeasures fuse reliability, safety, and throughput; open synthesized guidance per asset when
-        you need execution detail.
+        {isManager ? (
+          <>
+            <strong>{operatorRoleShort(flow.operatorRole)}</strong> — the action queue matches your Executive summary
+            context for this site, with emphasis on follow-up for assets in <strong>production stoppage</strong>. Open
+            synthesized guidance per asset when you want deeper execution text.
+          </>
+        ) : (
+          <>
+            <strong>{operatorRoleShort(flow.operatorRole)}</strong> — dual recommendation engines: processing-line (fryer /
+            slicer / seasoning) vs packaging-line (palletizer / case equipment) produce different actions for the same
+            asset signal. Countermeasures fuse reliability, safety, and throughput; open synthesized guidance per asset when
+            you need execution detail.
+          </>
+        )}
       </p>
 
-      <DataFeedHint />
-      <h3 className="rec-section-label">Cross-system action queue</h3>
-      <OperationalActionsPanel />
+      {!isManager ? <DataFeedHint /> : null}
+      {!isManager ? (
+        <>
+          <h3 className="rec-section-label">Cross-system action queue</h3>
+          <OperationalActionsPanel />
+        </>
+      ) : null}
 
       <h3 className="rec-section-label">Asset-specific guidance</h3>
       <RecommendationActionCards
@@ -176,14 +196,18 @@ const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange
           <span className="rec-legend-swatch" style={{ backgroundColor: 'var(--color-breakdown)' }} />
           <span>Breakdown</span>
         </div>
-        <div className="rec-legend-item">
-          <span className="rec-legend-swatch" style={{ backgroundColor: 'var(--color-failure-predicted)' }} />
-          <span>Failure predicted</span>
-        </div>
-        <div className="rec-legend-item">
-          <span className="rec-legend-swatch" style={{ backgroundColor: 'var(--color-under-maintenance)' }} />
-          <span>Under maintenance</span>
-        </div>
+        {!isManager ? (
+          <>
+            <div className="rec-legend-item">
+              <span className="rec-legend-swatch" style={{ backgroundColor: 'var(--color-failure-predicted)' }} />
+              <span>Failure predicted</span>
+            </div>
+            <div className="rec-legend-item">
+              <span className="rec-legend-swatch" style={{ backgroundColor: 'var(--color-under-maintenance)' }} />
+              <span>Under maintenance</span>
+            </div>
+          </>
+        ) : null}
       </div>
     </div>
   );

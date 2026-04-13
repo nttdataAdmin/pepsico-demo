@@ -35,7 +35,10 @@ const Header = ({ selectedMonth, selectedYear, onMonthChange, onYearChange, filt
             </div>
             {user && (
               <div className="user-section">
-                <span className="user-name">Welcome, {user.username}</span>
+                <span className="user-name" title={user.email || ''}>
+                  Welcome, {user.username}
+                  {user.email ? <span className="user-email"> · {user.email}</span> : null}
+                </span>
                 <button onClick={onLogout} className="logout-button">Logout</button>
               </div>
             )}

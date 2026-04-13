@@ -1,0 +1,216 @@
+/* Portal to document.body + high z-index so sticky header / timeline never paint over this overlay */
+.es-rec-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  background: rgba(0, 20, 50, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  padding-top: max(24px, env(safe-area-inset-top, 0px));
+}
+
+.es-rec-modal {
+  width: min(640px, 100%);
+  max-height: min(90vh, 760px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(0, 42, 94, 0.12);
+}
+
+.es-rec-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 1rem 1.25rem 0;
+  flex-shrink: 0;
+}
+
+.es-rec-modal-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #003087;
+}
+
+.es-rec-modal-close {
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #5a6570;
+  padding: 0 4px;
+}
+
+.es-rec-modal-close:hover {
+  color: #003087;
+}
+
+.es-rec-modal-intro {
+  margin: 0;
+  padding: 0.75rem 1.25rem 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: #4a5a6a;
+  flex-shrink: 0;
+}
+
+.es-rec-modal-loading,
+.es-rec-modal-empty {
+  margin: 1rem 1.25rem;
+  font-size: 0.9rem;
+  color: #5a6570;
+}
+
+.es-rec-modal-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.es-rec-modal-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0 1.25rem;
+  overflow-y: auto;
+  flex: 0 1 auto;
+  max-height: min(38vh, 320px);
+}
+
+.es-rec-modal-li {
+  margin: 0;
+  padding: 0;
+}
+
+.es-rec-modal-item {
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(0, 42, 94, 0.1);
+  border-radius: 8px;
+  padding: 12px 12px 10px;
+  margin-bottom: 10px;
+  background: #fafbfd;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.es-rec-modal-item:hover {
+  border-color: #005cbc;
+  background: #f0f6fc;
+}
+
+.es-rec-modal-item--selected {
+  border-color: #005cbc;
+  box-shadow: 0 0 0 2px rgba(0, 92, 188, 0.2);
+  background: #f0f6fc;
+}
+
+.es-rec-modal-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.es-rec-modal-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(180, 60, 40, 0.12);
+  color: #8a2c1f;
+}
+
+.es-rec-modal-item-meta {
+  font-size: 0.78rem;
+  color: #6a7580;
+  margin: 4px 0 6px;
+}
+
+.es-rec-modal-item-text {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: #2a3540;
+}
+
+.es-rec-modal-item-hint {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #005cbc;
+  letter-spacing: 0.02em;
+}
+
+.es-rec-modal-guidance {
+  flex: 1;
+  min-height: 0;
+  margin: 0 1.25rem 0.75rem;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 92, 188, 0.25);
+  background: rgba(0, 92, 188, 0.04);
+  overflow-y: auto;
+}
+
+.es-rec-modal-guidance-title {
+  margin: 0 0 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #003087;
+}
+
+.es-rec-modal-guidance-loading {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #5a6570;
+}
+
+.es-rec-modal-guidance-body {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #2a3540;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.es-rec-modal-footer {
+  padding: 0 1.25rem 1.1rem;
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  border-top: 1px solid rgba(0, 42, 94, 0.08);
+  padding-top: 12px;
+  margin-top: auto;
+}
+
+.es-rec-modal-btn {
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: 1px solid #005cbc;
+  background: #005cbc;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.88rem;
+}
+
+.es-rec-modal-btn:hover {
+  background: #004a9a;
+}

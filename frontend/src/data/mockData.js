@@ -84,7 +84,24 @@ export const mockAssets = [
 ];
 
 function resolveOperatorRole(opts = {}) {
-  return opts.operatorRole === 'processing' ? 'processing' : 'packaging';
+  if (opts.operatorRole === 'manager') return 'manager';
+  if (opts.operatorRole === 'processing') return 'processing';
+  return 'packaging';
+}
+
+/** Regional supervisor roll-up: assets in Breakdown in either operator scenario (deduped by asset_id). */
+export function getManagerBreakdownAssets(filters = {}) {
+  const packBd = mockAssets.filter((a) => a.status === 'Breakdown');
+  const procBd = mockAssetsProcessing.filter((a) => a.status === 'Breakdown');
+  const map = new Map();
+  for (const a of [...packBd, ...procBd]) {
+    if (!map.has(a.asset_id)) map.set(a.asset_id, { ...a, status: 'Breakdown' });
+  }
+  let filtered = [...map.values()];
+  if (filters.state) filtered = filtered.filter((a) => a.state === filters.state);
+  if (filters.plant) filtered = filtered.filter((a) => a.plant === filters.plant);
+  if (filters.asset_id) filtered = filtered.filter((a) => a.asset_id === filters.asset_id);
+  return filtered;
 }
 
 /** Processing-line demo: fryer circulation + thermal oil gen; seasoning train (packaging keeps mockAssets). */
@@ -194,6 +211,9 @@ export const getAssetSummaryFiltered = (filters = {}, opts = {}) =>
   buildSummaryFromAssets(getAssetsFiltered(filters, opts));
 
 export const getAssetsFiltered = (filters = {}, opts = {}) => {
+  if (resolveOperatorRole(opts) === 'manager') {
+    return getManagerBreakdownAssets(filters);
+  }
   const pool = resolveOperatorRole(opts) === 'processing' ? mockAssetsProcessing : mockAssets;
   let filtered = [...pool];
   if (filters.state) filtered = filtered.filter((a) => a.state === filters.state);
@@ -292,6 +312,24 @@ export function applyRoleTransformToAnomalies(rows, operatorRole) {
 }
 
 export const getAnomalies = (filters = {}, opts = {}) => {
+  if (resolveOperatorRole(opts) === 'manager') {
+    const bdIds = new Set(getManagerBreakdownAssets(filters).map((a) => a.asset_id));
+    const merged = [...mockAnomalies, ...mockAnomaliesProcessing];
+    const best = new Map();
+    for (const row of merged) {
+      if (!bdIds.has(row.asset_id)) continue;
+      const k = `${row.asset_id}|${row.time}`;
+      const cur = best.get(k);
+      const score = (Number(row.vibration) || 0) + (Number(row.temperature) || 0) * 0.01;
+      const curScore = cur ? (Number(cur.vibration) || 0) + (Number(cur.temperature) || 0) * 0.01 : -1;
+      if (!cur || score >= curScore) best.set(k, row);
+    }
+    let filtered = [...best.values()];
+    if (filters.asset_id) filtered = filtered.filter((a) => a.asset_id === filters.asset_id);
+    if (filters.state) filtered = filtered.filter((a) => a.state === filters.state);
+    if (filters.plant) filtered = filtered.filter((a) => a.plant === filters.plant);
+    return filtered;
+  }
   const source = resolveOperatorRole(opts) === 'processing' ? mockAnomaliesProcessing : mockAnomalies;
   let filtered = [...source];
   if (filters.asset_id) filtered = filtered.filter((a) => a.asset_id === filters.asset_id);
@@ -443,7 +481,8 @@ const mockRootCausesProcessing = (() => {
 })();
 
 function filterRootCauseFlow(filters = {}, opts = {}) {
-  const base = resolveOperatorRole(opts) === 'processing' ? mockRootCausesProcessing : mockRootCauses;
+  const role = resolveOperatorRole(opts);
+  const base = role === 'processing' ? mockRootCausesProcessing : role === 'manager' ? mockRootCauses : mockRootCauses;
   if (!filters.state) return base;
   const assetsInScope = getAssetsFiltered(
     {
@@ -479,6 +518,9 @@ export const getRootCauseAnalysis = (filters = {}, opts = {}) => filterRootCause
 
 /** Same asset row → different guidance for processing vs packaging operator lens (demo dual engine). */
 function recommendationForOperatorLens(row, role) {
+  if (role === 'manager') {
+    return `Leadership queue: ${row.asset_id} is down — align with the plant maintenance lead on estimated return and customer impact; keep steering notes tied to this stoppage until the line is back in band.`;
+  }
   const base = row.recommendation;
   const isPack = role === 'packaging';
   const byBase = {
@@ -672,6 +714,34 @@ export const mockRecommendationsProcessing = [
   },
 ];
 
+/**
+ * Canonical workcenter Roleid / Rolename catalog — same reference set for executive MES (line execution)
+ * preview and CMMS / planned-downtime vocabulary (Maintenance Supervisor, Reliability Manager, etc.).
+ */
+export const WORKCENTER_ROLES_MASTER = [
+  { Roleid: 'R001', Rolename: 'Site Director' },
+  { Roleid: 'R002', Rolename: 'Supply Chain Leader' },
+  { Roleid: 'R003', Rolename: 'Receiving Operator' },
+  { Roleid: 'R004', Rolename: 'Quality Technician' },
+  { Roleid: 'R005', Rolename: 'Department Manager' },
+  { Roleid: 'R006', Rolename: 'PMO GU' },
+  { Roleid: 'R007', Rolename: 'Crewer' },
+  { Roleid: 'R008', Rolename: 'Packaging Machine Operator' },
+  { Roleid: 'R009', Rolename: 'Processing Operator' },
+  { Roleid: 'R010', Rolename: 'Maintenance Supervisor' },
+  { Roleid: 'R011', Rolename: 'Reliability Engineer' },
+  { Roleid: 'R012', Rolename: 'Reliability Manager' },
+  { Roleid: 'R013', Rolename: 'Supervisor Manager' },
+  { Roleid: 'R014', Rolename: 'Area Mechanic Lead' },
+  { Roleid: 'R015', Rolename: 'Site Planner' },
+  { Roleid: 'R016', Rolename: 'EHS Officer' },
+  { Roleid: 'R017', Rolename: 'Site Maintenance Manager' },
+  { Roleid: 'R018', Rolename: 'Electrical Specialist' },
+  { Roleid: 'R019', Rolename: 'Process Engineer' },
+  { Roleid: 'R020', Rolename: 'Maintenance Technician I' },
+  { Roleid: 'R021', Rolename: 'Maintenance Technician II' },
+];
+
 /** CMMS routing: same string on Maintenance, Recommendations, and synthesis guidance (AI prompt). */
 export const ASSET_MAINTENANCE_RESPONSIBLE = {
   'BEL-PUMP-001': 'Maintenance Supervisor + Reliability Engineer',
@@ -798,6 +868,50 @@ function withResponsibleParty(row) {
 
 export const getRecommendations = (filters = {}, opts = {}) => {
   const role = resolveOperatorRole(opts);
+  if (role === 'manager') {
+    const scoped = getManagerBreakdownAssets({
+      state: filters.state,
+      plant: filters.plant,
+      asset_id: filters.asset_id,
+    });
+    const idSet = new Set(scoped.map((a) => a.asset_id));
+    const merged = [...mockRecommendations, ...mockRecommendationsProcessing].filter((r) => idSet.has(r.asset_id));
+    const byId = new Map();
+    merged.forEach((r) => {
+      if (!byId.has(r.asset_id)) byId.set(r.asset_id, r);
+    });
+    let filtered = [...byId.values()];
+    const hasFilters = filters.state || filters.plant || filters.asset_id || filters.year || filters.month;
+    if (filters.state) filtered = filtered.filter((r) => r.state === filters.state);
+    if (filters.plant) filtered = filtered.filter((r) => r.plant === filters.plant);
+    if (filters.asset_id) filtered = filtered.filter((r) => r.asset_id === filters.asset_id);
+    if (filters.year) filtered = filtered.filter((r) => r.year === filters.year);
+    if (filters.month) {
+      const monthMap = {
+        Jan: 'January',
+        Feb: 'February',
+        Mar: 'March',
+        Apr: 'April',
+        May: 'May',
+        Jun: 'June',
+        Jul: 'July',
+        Aug: 'August',
+        Sep: 'September',
+        Oct: 'October',
+        Nov: 'November',
+        Dec: 'December',
+      };
+      const monthName = monthMap[filters.month] || filters.month;
+      filtered = filtered.filter((r) => r.month === monthName || r.month === filters.month);
+    }
+    const baseRows = !hasFilters ? [...byId.values()] : filtered;
+    return baseRows.map((r) => ({
+      ...r,
+      recommendation: recommendationForOperatorLens(r, 'manager'),
+      recommendation_engine: 'supervisor_breakdown',
+      responsible_party: getResponsiblePartyForAsset(r.asset_id),
+    }));
+  }
   const source = role === 'processing' ? mockRecommendationsProcessing : mockRecommendations;
   let filtered = [...source];
   const hasFilters = filters.state || filters.plant || filters.asset_id || filters.year || filters.month;
@@ -913,6 +1027,44 @@ export const mockMaintenanceProcessing = [
 ];
 
 export const getMaintenanceSchedule = (filters = {}, opts = {}) => {
+  if (resolveOperatorRole(opts) === 'manager') {
+    const ids = new Set(getManagerBreakdownAssets({}).map((a) => a.asset_id));
+    const merged = [...mockMaintenance, ...mockMaintenanceProcessing];
+    const seen = new Set();
+    let filtered = [];
+    for (const m of merged) {
+      if (!ids.has(m.asset_id)) continue;
+      const key = `${m.asset_id}|${m.scheduled_date}|${m.maintenance_type}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      filtered.push(m);
+    }
+    const hasFilters = filters.state || filters.plant || filters.asset_id || filters.year || filters.month;
+    if (filters.state) filtered = filtered.filter((m) => m.state === filters.state);
+    if (filters.plant) filtered = filtered.filter((m) => m.plant === filters.plant);
+    if (filters.asset_id) filtered = filtered.filter((m) => m.asset_id === filters.asset_id);
+    if (filters.year) filtered = filtered.filter((m) => m.year === filters.year);
+    if (filters.month) {
+      const monthMap = {
+        Jan: 'January',
+        Feb: 'February',
+        Mar: 'March',
+        Apr: 'April',
+        May: 'May',
+        Jun: 'June',
+        Jul: 'July',
+        Aug: 'August',
+        Sep: 'September',
+        Oct: 'October',
+        Nov: 'November',
+        Dec: 'December',
+      };
+      const monthName = monthMap[filters.month] || filters.month;
+      filtered = filtered.filter((m) => m.month === monthName || m.month === filters.month);
+    }
+    if (!hasFilters) return filtered;
+    return filtered;
+  }
   const source = resolveOperatorRole(opts) === 'processing' ? mockMaintenanceProcessing : mockMaintenance;
   let filtered = [...source];
   const hasFilters = filters.state || filters.plant || filters.asset_id || filters.year || filters.month;

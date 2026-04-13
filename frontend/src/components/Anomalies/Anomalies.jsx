@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { getAnomalies as getMockAnomalies, applyRoleTransformToAnomalies } from '../../data/mockData';
+import {
+  getAnomalies as getMockAnomalies,
+  applyRoleTransformToAnomalies,
+  getManagerBreakdownAssets,
+} from '../../data/mockData';
 import { getAnomalies as fetchAnomaliesApi, getAnomalyAgentBriefing } from '../../services/api';
 import { normalizeAnomalyRows } from '../../utils/anomalyTelemetry';
 import VibrationChart from './VibrationChart';
@@ -10,6 +14,7 @@ import { DataFeedHint, AnomalySignalsPanel } from '../Agentic/IntegratedDataPane
 import AnomaliesLoading from './AnomaliesLoading';
 import AnomalyAgentPanel from './AnomalyAgentPanel';
 import { useAppFlow } from '../../context/AppFlowContext';
+import ManagerScopeBanner from '../Layout/ManagerScopeBanner';
 import { operatorRoleShort } from '../../utils/operatorRole';
 import { usePageChatKnowledge } from '../../context/ChatAssistantContext';
 import { resolveAnomalyIndicatorFeeds } from '../../utils/agenticSynthesis';
@@ -38,6 +43,9 @@ const Anomalies = ({ selectedMonth, selectedYear, filters, onFiltersChange }) =>
   filtersRef.current = filters;
   const operatorRoleRef = useRef(flow.operatorRole);
   operatorRoleRef.current = flow.operatorRole;
+  const accountRoleRef = useRef(flow.accountRole);
+  accountRoleRef.current = flow.accountRole;
+  const isManager = flow.accountRole === 'manager';
 
   const indicatorFeeds = useMemo(
     () => resolveAnomalyIndicatorFeeds(excelBundle || {}, filters, anomalyData),
@@ -60,18 +68,29 @@ const Anomalies = ({ selectedMonth, selectedYear, filters, onFiltersChange }) =>
     const scopeKey = JSON.stringify(f);
     const start = Date.now();
     try {
-      const [raw, br] = await Promise.all([fetchAnomaliesApi(f), getAnomalyAgentBriefing(f)]);
+      const mgr = accountRoleRef.current === 'manager';
+      const [raw, br] = await Promise.all([
+        fetchAnomaliesApi(f),
+        mgr ? Promise.resolve(null) : getAnomalyAgentBriefing(f),
+      ]);
       if (!mounted.current || JSON.stringify(filtersRef.current) !== scopeKey) return;
-      const normalized = normalizeAnomalyRows(raw);
+      let normalized = normalizeAnomalyRows(raw);
+      if (mgr) {
+        const ids = new Set(getManagerBreakdownAssets(f).map((a) => a.asset_id));
+        normalized = normalized.filter((r) => ids.has(r.asset_id));
+      }
       setAnomalyData(applyRoleTransformToAnomalies(normalized, operatorRoleRef.current));
       setBriefing(br);
       setDataSource('api');
     } catch (e) {
       if (!mounted.current || JSON.stringify(filtersRef.current) !== scopeKey) return;
       console.warn('Anomalies: API unavailable, using embedded demo telemetry.', e?.message || e);
-      setAnomalyData(
-        normalizeAnomalyRows(getMockAnomalies(f, { operatorRole: operatorRoleRef.current }))
-      );
+      let mockRows = normalizeAnomalyRows(getMockAnomalies(f, { operatorRole: operatorRoleRef.current }));
+      if (accountRoleRef.current === 'manager') {
+        const ids = new Set(getManagerBreakdownAssets(f).map((a) => a.asset_id));
+        mockRows = mockRows.filter((r) => ids.has(r.asset_id));
+      }
+      setAnomalyData(mockRows);
       setBriefing(null);
       setDataSource('mock');
     } finally {
@@ -109,7 +128,7 @@ const Anomalies = ({ selectedMonth, selectedYear, filters, onFiltersChange }) =>
       if (debounceRef.current) clearTimeout(debounceRef.current);
       if (minLoadRef.current) clearTimeout(minLoadRef.current);
     };
-  }, [filters, selectedMonth, selectedYear, flow.operatorRole, loadTelemetryAndBriefing]);
+  }, [filters, selectedMonth, selectedYear, flow.operatorRole, flow.accountRole, loadTelemetryAndBriefing]);
 
   const handleAgentRefresh = useCallback(async () => {
     if (!filters.state) return;
@@ -147,6 +166,8 @@ const Anomalies = ({ selectedMonth, selectedYear, filters, onFiltersChange }) =>
         briefing: briefingSnippet,
         indicatorFeeds,
         operatorRole: flow.operatorRole,
+        accountRole: flow.accountRole,
+        managerBreakdownScope: isManager,
       },
       null,
       2
@@ -162,6 +183,8 @@ const Anomalies = ({ selectedMonth, selectedYear, filters, onFiltersChange }) =>
     briefing,
     indicatorFeeds,
     flow.operatorRole,
+    flow.accountRole,
+    isManager,
   ]);
 
   usePageChatKnowledge(anomaliesChatKnowledge);
@@ -192,69 +215,85 @@ const Anomalies = ({ selectedMonth, selectedYear, filters, onFiltersChange }) =>
   return (
     <div className={`anomalies-page ${dataSource === 'api' ? 'anomalies-page--live-api' : ''}`}>
       <h2 className="page-title">Production signals</h2>
+      {isManager ? <ManagerScopeBanner /> : null}
       <p className="agentic-section-intro">
-        <strong>{operatorRoleShort(flow.operatorRole)}</strong> — processing operators prioritize fryer/slicer/seasoning
-        thermal-vibration coupling; packaging operators emphasize palletizer upstream accumulation and case-line stops.
-        Historian streams fuse into the agent narrative below; Excel bundles still augment context.
+        {isManager ? (
+          <>
+            <strong>{operatorRoleShort(flow.operatorRole)}</strong> — telemetry and charts follow your Executive
+            summary site selection, centered on assets tied to <strong>production stoppages</strong> for this territory.
+          </>
+        ) : (
+          <>
+            <strong>{operatorRoleShort(flow.operatorRole)}</strong> — processing operators prioritize fryer/slicer/seasoning
+            thermal-vibration coupling; packaging operators emphasize palletizer upstream accumulation and case-line stops.
+            Historian streams fuse into the agent narrative below; Excel bundles still augment context.
+          </>
+        )}
       </p>
 
-      <AnomalyAgentPanel
-        briefing={briefing}
-        dataSource={dataSource}
-        onRefresh={handleAgentRefresh}
-        refreshing={refreshing}
-      />
-
-      <DataFeedHint />
-      <AnomalySignalsPanel
-        fusionMeta={
-          briefing
-            ? { correlationId: briefing.correlation_id, generatedAt: briefing.generated_at }
-            : null
-        }
-        scopeFilters={filters}
-      />
-
-      <div className="database-indicators-row">
-        <DatabaseIndicator
-          source={MODEL_LABELS.historian}
-          status="active"
-          dataPreview={{
-            records: indicatorFeeds.historian.records,
-            lastSync: indicatorFeeds.historian.lastSync,
-            data: indicatorFeeds.historian.data,
-          }}
-          subtitle={indicatorFeeds.historian.subtitle}
-          onToggle={() => toggleModel('historian')}
-          selected={activeModel === 'historian'}
+      {!isManager ? (
+        <AnomalyAgentPanel
+          briefing={briefing}
+          dataSource={dataSource}
+          onRefresh={handleAgentRefresh}
+          refreshing={refreshing}
         />
-        <DatabaseIndicator
-          source={MODEL_LABELS.vibration}
-          status="active"
-          dataPreview={{
-            records: indicatorFeeds.vibration.records,
-            lastSync: indicatorFeeds.vibration.lastSync,
-            data: indicatorFeeds.vibration.data,
-          }}
-          subtitle={indicatorFeeds.vibration.subtitle}
-          onToggle={() => toggleModel('vibration')}
-          selected={activeModel === 'vibration'}
-        />
-        <DatabaseIndicator
-          source={MODEL_LABELS.thermal}
-          status="active"
-          dataPreview={{
-            records: indicatorFeeds.thermal.records,
-            lastSync: indicatorFeeds.thermal.lastSync,
-            data: indicatorFeeds.thermal.data,
-          }}
-          subtitle={indicatorFeeds.thermal.subtitle}
-          onToggle={() => toggleModel('thermal')}
-          selected={activeModel === 'thermal'}
-        />
-      </div>
+      ) : null}
 
-      {activeModel && (
+      {!isManager ? <DataFeedHint /> : null}
+      {!isManager ? (
+        <AnomalySignalsPanel
+          fusionMeta={
+            briefing
+              ? { correlationId: briefing.correlation_id, generatedAt: briefing.generated_at }
+              : null
+          }
+          scopeFilters={filters}
+        />
+      ) : null}
+
+      {!isManager ? (
+        <div className="database-indicators-row">
+          <DatabaseIndicator
+            source={MODEL_LABELS.historian}
+            status="active"
+            dataPreview={{
+              records: indicatorFeeds.historian.records,
+              lastSync: indicatorFeeds.historian.lastSync,
+              data: indicatorFeeds.historian.data,
+            }}
+            subtitle={indicatorFeeds.historian.subtitle}
+            onToggle={() => toggleModel('historian')}
+            selected={activeModel === 'historian'}
+          />
+          <DatabaseIndicator
+            source={MODEL_LABELS.vibration}
+            status="active"
+            dataPreview={{
+              records: indicatorFeeds.vibration.records,
+              lastSync: indicatorFeeds.vibration.lastSync,
+              data: indicatorFeeds.vibration.data,
+            }}
+            subtitle={indicatorFeeds.vibration.subtitle}
+            onToggle={() => toggleModel('vibration')}
+            selected={activeModel === 'vibration'}
+          />
+          <DatabaseIndicator
+            source={MODEL_LABELS.thermal}
+            status="active"
+            dataPreview={{
+              records: indicatorFeeds.thermal.records,
+              lastSync: indicatorFeeds.thermal.lastSync,
+              data: indicatorFeeds.thermal.data,
+            }}
+            subtitle={indicatorFeeds.thermal.subtitle}
+            onToggle={() => toggleModel('thermal')}
+            selected={activeModel === 'thermal'}
+          />
+        </div>
+      ) : null}
+
+      {!isManager && activeModel ? (
         <div className="anomaly-model-inline-detail" role="region" aria-label={MODEL_LABELS[activeModel]}>
           <div className="anomaly-model-inline-header">
             <h3 className="anomaly-model-inline-title">{MODEL_LABELS[activeModel]}</h3>
@@ -270,7 +309,7 @@ const Anomalies = ({ selectedMonth, selectedYear, filters, onFiltersChange }) =>
             emptyLabel="No rows for this model in the current scope."
           />
         </div>
-      )}
+      ) : null}
 
       <h3 className="anomalies-telemetry-title">Live telemetry · condition traces</h3>
       <div className="anomalies-layout">

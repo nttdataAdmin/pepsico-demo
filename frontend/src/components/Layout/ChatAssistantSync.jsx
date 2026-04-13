@@ -33,6 +33,8 @@ export function ChatUiSync({
   operatorRole,
   qcOutcome,
   hitlApproved,
+  accountRole,
+  detailedAnalysisUnlocked,
 }) {
   const { setUiContext } = useChatAssistant();
 
@@ -44,9 +46,21 @@ export function ChatUiSync({
       operatorRole,
       qcOutcome,
       hitlApproved,
+      accountRole,
+      detailedAnalysisUnlocked,
     });
     return () => setUiContext(null);
-  }, [selectedMonth, selectedYear, filters, operatorRole, qcOutcome, hitlApproved, setUiContext]);
+  }, [
+    selectedMonth,
+    selectedYear,
+    filters,
+    operatorRole,
+    qcOutcome,
+    hitlApproved,
+    accountRole,
+    detailedAnalysisUnlocked,
+    setUiContext,
+  ]);
 
   return null;
 }

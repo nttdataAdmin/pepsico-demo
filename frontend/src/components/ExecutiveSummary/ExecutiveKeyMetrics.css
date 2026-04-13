@@ -1,0 +1,56 @@
+.es-key-metrics {
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.25rem;
+}
+
+.es-key-metrics-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #002a5e;
+}
+
+.es-key-metrics-lead {
+  margin: 0 0 1rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #5a6570;
+}
+
+.es-key-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.es-key-metric-tile {
+  border: 1px solid rgba(0, 42, 94, 0.1);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.85);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.es-key-metric-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #5a6570;
+}
+
+.es-key-metric-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #003087;
+}
+
+.es-key-metric-sub {
+  font-size: 0.78rem;
+  color: #6a7580;
+  line-height: 1.35;
+}

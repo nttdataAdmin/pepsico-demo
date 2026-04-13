@@ -5,6 +5,7 @@ import RcaTraceGraphic from './RcaTraceGraphic';
 import SelectPlaceGate from '../Layout/SelectPlaceGate';
 import { DataFeedHint, RcaCorroborationPanel } from '../Agentic/IntegratedDataPanels';
 import { useAppFlow } from '../../context/AppFlowContext';
+import ManagerScopeBanner from '../Layout/ManagerScopeBanner';
 import { operatorRoleShort } from '../../utils/operatorRole';
 import { usePageChatKnowledge } from '../../context/ChatAssistantContext';
 import { deriveRcaFlowSnapshot } from './deriveRcaFlowSnapshot';
@@ -13,6 +14,7 @@ import './RootCauseAnalysis.css';
 
 const RootCauseAnalysis = ({ selectedMonth, selectedYear, filters, onFiltersChange }) => {
   const { excelBundle, flow } = useAppFlow();
+  const isManager = flow.accountRole === 'manager';
   const [rootCauseData, setRootCauseData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedPath, setSelectedPath] = useState({
@@ -181,6 +183,8 @@ const RootCauseAnalysis = ({ selectedMonth, selectedYear, filters, onFiltersChan
         rootCauseDataHint: dataHint,
         rootCausesByAsset: rootCausesByAssetForChat,
         operatorRole: flow.operatorRole,
+        accountRole: flow.accountRole,
+        managerBreakdownScope: isManager,
       },
       null,
       2
@@ -197,6 +201,8 @@ const RootCauseAnalysis = ({ selectedMonth, selectedYear, filters, onFiltersChan
     rootCauseData,
     rootCausesByAssetForChat,
     flow.operatorRole,
+    flow.accountRole,
+    isManager,
   ]);
 
   usePageChatKnowledge(rcaChatKnowledge);
@@ -222,15 +228,29 @@ const RootCauseAnalysis = ({ selectedMonth, selectedYear, filters, onFiltersChan
   return (
     <div className="root-cause-page">
       <h2 className="page-title">Root cause trace</h2>
+      {isManager ? <ManagerScopeBanner /> : null}
       <p className="agentic-section-intro">
-        <strong>{operatorRoleShort(flow.operatorRole)}</strong> — RCA narratives weight equipment history differently:
-        processing traces cook/seasoning chains; packaging traces palletizer and case-line fault trees. Follow the flow
-        from fleet to asset, then compare corroborating beats.
+        {isManager ? (
+          <>
+            <strong>{operatorRoleShort(flow.operatorRole)}</strong> — trace and hypotheses follow the same site and
+            leadership framing as Executive summary, with emphasis on assets in <strong>production stoppage</strong>.
+          </>
+        ) : (
+          <>
+            <strong>{operatorRoleShort(flow.operatorRole)}</strong> — RCA narratives weight equipment history differently:
+            processing traces cook/seasoning chains; packaging traces palletizer and case-line fault trees. Follow the flow
+            from fleet to asset, then compare corroborating beats.
+          </>
+        )}
       </p>
 
-      <DataFeedHint />
-      <h3 className="rca-subheading">Corroborating analysis beats</h3>
-      <RcaCorroborationPanel model={corroborationModel} />
+      {!isManager ? <DataFeedHint /> : null}
+      {!isManager ? (
+        <>
+          <h3 className="rca-subheading">Corroborating analysis beats</h3>
+          <RcaCorroborationPanel model={corroborationModel} />
+        </>
+      ) : null}
 
       {thresholdCrossings.length > 0 && (
         <div className="threshold-crossings-section rca-threshold-deck">

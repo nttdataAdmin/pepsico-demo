@@ -379,3 +379,94 @@
   border: 1px solid #ffe0a3;
 }
 
+.es-manager-strip {
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.25rem;
+}
+
+.es-manager-strip-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  color: #003087;
+}
+
+.es-manager-strip-text {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #444;
+}
+
+.es-manager-breakdown {
+  margin-top: 1.25rem;
+  padding: 1rem 1.25rem;
+}
+
+.es-manager-bd-title {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  color: #003087;
+}
+
+.es-manager-bd-lead {
+  margin: 0 0 1rem;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: #555;
+}
+
+.es-manager-bd-empty {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.es-manager-bd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.es-manager-bd-table th,
+.es-manager-bd-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(0, 42, 94, 0.1);
+}
+
+.es-manager-bd-table th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #5a6570;
+}
+
+.es-inline-actions {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.es-flow-banner--detailed {
+  border-left: 4px solid #005cbc;
+  background: linear-gradient(135deg, #f0f6fc 0%, #fff 100%);
+}
+
+.es-detailed-unlocked {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.88rem;
+  color: #1b5e20;
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+}
+
+.es-inline-actions .es-flow-btn {
+  background: #fff;
+  color: #005cbc;
+  border: 1px solid #005cbc;
+}
+

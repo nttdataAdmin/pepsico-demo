@@ -6,17 +6,19 @@ import SelectPlaceGate from '../Layout/SelectPlaceGate';
 import { DataFeedHint, DowntimeSignalsPanel } from '../Agentic/IntegratedDataPanels';
 import { usePageChatKnowledge } from '../../context/ChatAssistantContext';
 import { useAppFlow } from '../../context/AppFlowContext';
+import ManagerScopeBanner from '../Layout/ManagerScopeBanner';
 import { operatorRoleShort } from '../../utils/operatorRole';
 import './MaintenanceSchedule.css';
 
 const MaintenanceSchedule = ({ selectedMonth, selectedYear, filters, onFiltersChange }) => {
   const { flow } = useAppFlow();
+  const isManager = flow.accountRole === 'manager';
   const [schedule, setSchedule] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadSchedule();
-  }, [selectedMonth, selectedYear, filters, flow.operatorRole]);
+  }, [selectedMonth, selectedYear, filters, flow.operatorRole, flow.accountRole]);
 
   const loadSchedule = () => {
     setLoading(true);
@@ -62,11 +64,13 @@ const MaintenanceSchedule = ({ selectedMonth, selectedYear, filters, onFiltersCh
         scheduledWorkOrderCount: schedule.length,
         scheduleSample: schedule.slice(0, 20),
         operatorRole: flow.operatorRole,
+        accountRole: flow.accountRole,
+        managerBreakdownScope: isManager,
       },
       null,
       2
     );
-  }, [filters, selectedMonth, selectedYear, loading, schedule, flow.operatorRole]);
+  }, [filters, selectedMonth, selectedYear, loading, schedule, flow.operatorRole, flow.accountRole, isManager]);
 
   usePageChatKnowledge(maintChatKnowledge);
 
@@ -91,15 +95,29 @@ const MaintenanceSchedule = ({ selectedMonth, selectedYear, filters, onFiltersCh
   return (
     <div className="maintenance-schedule-page">
       <h2 className="page-title">Planned Downtime</h2>
+      {isManager ? <ManagerScopeBanner /> : null}
       <p className="agentic-section-intro">
-        <strong>{operatorRoleShort(flow.operatorRole)}</strong> — maintenance windows are interpreted through your line:
-        processing focuses on fryer/slicer PM chains; packaging prioritizes palletizer and case-line mechanicals. Planned
-        downtime and OEE-impacting events are summarized first, then work orders.
+        {isManager ? (
+          <>
+            <strong>{operatorRoleShort(flow.operatorRole)}</strong> — scheduled work reflects the same site and
+            leadership framing as Executive summary, with emphasis on work linked to <strong>production stoppages</strong>.
+          </>
+        ) : (
+          <>
+            <strong>{operatorRoleShort(flow.operatorRole)}</strong> — maintenance windows are interpreted through your line:
+            processing focuses on fryer/slicer PM chains; packaging prioritizes palletizer and case-line mechanicals. Planned
+            downtime and OEE-impacting events are summarized first, then work orders.
+          </>
+        )}
       </p>
 
-      <DataFeedHint />
-      <h3 className="maint-section-label">Downtime & loss narrative</h3>
-      <DowntimeSignalsPanel schedule={schedule} />
+      {!isManager ? <DataFeedHint /> : null}
+      {!isManager ? (
+        <>
+          <h3 className="maint-section-label">Downtime & loss narrative</h3>
+          <DowntimeSignalsPanel schedule={schedule} />
+        </>
+      ) : null}
 
       <h3 className="maint-section-label">Scheduled work orders</h3>
       <MaintenanceEventCards schedule={schedule} />

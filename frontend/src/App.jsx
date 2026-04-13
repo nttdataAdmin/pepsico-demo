@@ -22,22 +22,27 @@ function HomeRedirect() {
 }
 
 /**
- * Go path & pre-HITL No-Go: executive summary only. After HITL on No-Go, all assessment tabs allowed.
+ * Go: upload + executive summary only (no five-tab workspace).
+ * No-Go: executive summary until supervisor HITL + Enter detailed analysis, then all tabs.
  */
 function RequireAssessmentAccess({ children }) {
   const { flow } = useAppFlow();
   const location = useLocation();
   const path = location.pathname;
 
-  const execOnly =
-    flow.outcome === 'go' || (flow.outcome === 'no_go' && !flow.hitlApproved);
+  if (!flow.outcome && path !== '/upload') {
+    return <Navigate to="/upload" replace />;
+  }
 
-  if (execOnly && path !== '/executive-summary') {
+  if (flow.outcome === 'go' && path !== '/executive-summary' && path !== '/upload') {
     return <Navigate to="/executive-summary" replace />;
   }
 
-  if (!flow.outcome && path !== '/upload') {
-    return <Navigate to="/upload" replace />;
+  if (flow.outcome === 'no_go') {
+    const unlocked = flow.hitlApproved && flow.detailedAnalysisUnlocked;
+    if (!unlocked && path !== '/executive-summary' && path !== '/upload') {
+      return <Navigate to="/executive-summary" replace />;
+    }
   }
 
   return children;
@@ -81,6 +86,8 @@ function AuthenticatedShell({ user, onLogout }) {
         operatorRole={flow.operatorRole}
         qcOutcome={flow.outcome}
         hitlApproved={flow.hitlApproved}
+        accountRole={flow.accountRole}
+        detailedAnalysisUnlocked={flow.detailedAnalysisUnlocked}
       />
       <div className="App" style={appBgStyle}>
         <div style={bgOverlayStyle} />
@@ -186,7 +193,14 @@ function AppInner() {
   }, [isAuthenticated, setRoutePath, setPageTitle, setUiContext]);
 
   const handleLogin = (userData) => {
-    setFlow({ outcome: null, operatorRole: null, hitlApproved: false });
+    setFlow({
+      outcome: null,
+      operatorRole: userData.operatorRole || null,
+      hitlApproved: false,
+      detailedAnalysisUnlocked: false,
+      accountRole: userData.accountRole || null,
+      userEmail: userData.email || null,
+    });
     setUser(userData);
     setIsAuthenticated(true);
   };

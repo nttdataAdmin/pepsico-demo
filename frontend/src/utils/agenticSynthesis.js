@@ -3,7 +3,11 @@
  * Sheet routing uses excelSheetRoutes (internal); user-facing copy never references files or spreadsheets.
  */
 
-import { appendWorkcenterrolesToDowntimeContextLine, formatCmmsMaintenanceRecordLine } from '../data/mockData';
+import {
+  appendWorkcenterrolesToDowntimeContextLine,
+  formatCmmsMaintenanceRecordLine,
+  WORKCENTER_ROLES_MASTER,
+} from '../data/mockData';
 import { sheetsForRoute } from './excelSheetRoutes';
 
 export function normKey(k) {
@@ -800,10 +804,11 @@ const EXEC_FEED_FALLBACK = {
     ],
   },
   mes: {
-    records: 128,
+    records: 128 + WORKCENTER_ROLES_MASTER.length,
     lastSync: 'Live',
-    subtitle: '12 active steps · Line 4 changeover verified',
+    subtitle: `${WORKCENTER_ROLES_MASTER.length} workcenter roles · line step telemetry`,
     data: [
+      ...WORKCENTER_ROLES_MASTER.map((r) => ({ Roleid: r.Roleid, Rolename: r.Rolename })),
       { Line: 'L4', Step: 'Seal integrity', Status: 'GO', Last: '14:22' },
       { Line: 'L2', Step: 'Weight check', Status: 'GO', Last: '14:20' },
       { Line: 'L1', Step: 'Metal check', Status: 'GO', Last: '14:18' },
@@ -863,6 +868,10 @@ export function summarizeExecutiveFeeds(bundle) {
     if (bucketKey === 'workforce') {
       preview = mergeWorkforcePreviewRows(data);
     }
+    if (bucketKey === 'process') {
+      const roleRows = WORKCENTER_ROLES_MASTER.map((r) => ({ Roleid: r.Roleid, Rolename: r.Rolename }));
+      preview = [...roleRows, ...preview];
+    }
 
     const top = preview[0];
     let subtitle = '';
@@ -878,11 +887,12 @@ export function summarizeExecutiveFeeds(bundle) {
       if (subtitle.length > 78) subtitle = `${subtitle.slice(0, 75)}…`;
     }
 
+    const maxPreview = bucketKey === 'process' ? 28 : 12;
     return {
       records,
       lastSync: 'Live',
       subtitle,
-      data: preview.slice(0, 12),
+      data: preview.slice(0, maxPreview),
     };
   }
 

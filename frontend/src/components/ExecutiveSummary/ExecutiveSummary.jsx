@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAssetSummaryFiltered, getAssetsFiltered } from '../../data/mockData';
 import AssetStatusSummary from './AssetStatusSummary';
@@ -14,6 +14,8 @@ import { operatorRoleTitle } from '../../utils/operatorRole';
 import { usePageChatKnowledge } from '../../context/ChatAssistantContext';
 import { summarizeExecutiveFeeds } from '../../utils/agenticSynthesis';
 import { SITE_LOCATIONS } from '../../config/siteLocations';
+import ExecutiveKeyMetrics from './ExecutiveKeyMetrics';
+import ExecutiveRecommendationsModal from './ExecutiveRecommendationsModal';
 import './ExecutiveSummary.css';
 
 const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChange }) => {
@@ -23,6 +25,9 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
   const qcNoGo = flow.outcome === 'no_go';
   const hitlPending = qcNoGo && !flow.hitlApproved;
   const assessmentLocked = qcGo || hitlPending;
+  const isManager = flow.accountRole === 'manager';
+  const [recModalOpen, setRecModalOpen] = useState(false);
+  const recAutoShownRef = useRef(false);
   const feeds = useMemo(() => summarizeExecutiveFeeds(excelBundle || {}), [excelBundle]);
 
   const [summary, setSummary] = useState(null);
@@ -42,6 +47,21 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
   }, [filters.state, flow.operatorRole]);
 
   const placeSelected = !!filters.state;
+
+  useEffect(() => {
+    if (flow.outcome === 'go' || !flow.outcome) {
+      setRecModalOpen(false);
+    }
+    if (flow.outcome !== 'no_go') {
+      recAutoShownRef.current = false;
+    }
+  }, [flow.outcome]);
+
+  useEffect(() => {
+    if (flow.outcome !== 'no_go' || !placeSelected || recAutoShownRef.current) return;
+    recAutoShownRef.current = true;
+    setRecModalOpen(true);
+  }, [flow.outcome, placeSelected]);
 
   const goPositiveSummary = useMemo(() => {
     if (!qcGo || !summary) return null;
@@ -81,6 +101,8 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
           qcOutcome: flow.outcome,
           hitlApproved: flow.hitlApproved,
           operatorRole: flow.operatorRole,
+          accountRole: flow.accountRole,
+          detailedAnalysisUnlocked: flow.detailedAnalysisUnlocked,
         },
         null,
         2
@@ -100,6 +122,8 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
     flow.outcome,
     flow.hitlApproved,
     flow.operatorRole,
+    flow.accountRole,
+    flow.detailedAnalysisUnlocked,
   ]);
 
   usePageChatKnowledge(chatKnowledge);
@@ -128,6 +152,11 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
   };
 
   const handleKpiSegment = (segment) => {
+    if (isManager && !assessmentLocked && segment !== 'total' && segment !== 'breakdown') {
+      setDetailTab('fleet');
+      setFleetStatusFilter(null);
+      return;
+    }
     if (assessmentLocked) {
       setDetailTab('fleet');
       switch (segment) {
@@ -210,8 +239,8 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
       ) : hitlPending ? (
         <div className="es-nogo-intro card" role="note">
           <strong>No-Go classification.</strong> Review live KPIs, map, feeds, and fleet detail below. When finished,
-          scroll to the <strong>end of the page</strong> for operations context and supervisor release to open Anomalies,
-          RCA, Recommendations, and Planned downtime.
+          scroll to the <strong>end of the page</strong> for supervisor release, then <strong>Enter detailed analysis</strong>{' '}
+          to open Anomalies, RCA, Recommendations, and Planned downtime.
         </div>
       ) : null}
 
@@ -219,7 +248,7 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
         <p className="es-kpi-lock-hint card">
           {qcGo
             ? 'Go path: assessment tabs stay closed — this page is intentionally lightweight.'
-            : 'KPI tiles stay on this page — jump-to-tab shortcuts are disabled until supervisor release at the bottom. Click a segment to filter the fleet register below.'}
+            : 'KPI tiles stay on this page — jump-to-tab shortcuts stay off until supervisor release and Enter detailed analysis. Click a segment to filter the fleet register below.'}
         </p>
       ) : null}
 
@@ -291,6 +320,14 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
         </div>
       ) : (
         <>
+          <ExecutiveKeyMetrics
+            filters={filters}
+            operatorRole={flow.operatorRole}
+            qcGo={qcGo}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+          />
+
           {qcGo ? (
             <div className="es-go-signals card" aria-label="Nominal signal strip">
               <h3 className="es-go-signals-title">Line health · Go path</h3>
@@ -308,6 +345,15 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
                   <span className="es-go-signal-value">Within target</span>
                 </div>
               </div>
+            </div>
+          ) : isManager ? (
+            <div className="es-manager-strip card" role="region" aria-label="Supervisor scope">
+              <h3 className="es-manager-strip-title">Supervisor executive lens</h3>
+              <p className="es-manager-strip-text">
+                This view centers on <strong>lines where production has stopped</strong> (Breakdown in the demo’s
+                processing and packaging stories), so regional steering stays aligned with the most urgent site posture.
+                It mirrors the framing you use on Executive summary for the territory you select.
+              </p>
             </div>
           ) : (
             <div className="database-indicators-row">
@@ -347,15 +393,18 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
           <p className="es-kpi-hint">
             {qcGo
               ? 'All counts below are intentionally positive for this Go snapshot — production line read as up and in control.'
-              : assessmentLocked
-                ? 'KPI tiles filter the fleet register on this page while the assessment workspace is gated.'
-                : 'KPI tiles are interactive — fleet totals open the register; risk states jump to the right workspace.'}
+              : isManager
+                ? 'Supervisor KPI strip summarizes stopped-line posture for this site. Use detailed analysis when you want the full five-tab workspace.'
+                : assessmentLocked
+                  ? 'KPI tiles filter the fleet register on this page while the assessment workspace is gated.'
+                  : 'KPI tiles are interactive — fleet totals open the register; risk states jump to the right workspace.'}
           </p>
           <div className={`es-kpi-strip es-kpi-strip--live ${qcGo ? 'es-kpi-strip--go' : ''}`}>
             <AssetStatusSummary
               summary={displaySummary}
               layout="horizontal"
-              interactive={!qcGo}
+              interactive={!qcGo && !isManager}
+              supervisorStrip={isManager && !qcGo}
               onSegmentClick={handleKpiSegment}
             />
           </div>
@@ -363,7 +412,11 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
           <section className="es-map-stage" aria-labelledby="es-map-heading">
             <div className="es-map-stage-header">
               <h2 id="es-map-heading" className="es-map-stage-title">
-                {qcGo ? 'Fleet map · nominal operations (QC Go)' : 'Fleet map · live asset posture'}
+                {qcGo
+                  ? 'Fleet map · nominal operations (QC Go)'
+                  : isManager
+                    ? 'Fleet map · production stoppages'
+                    : 'Fleet map · live asset posture'}
               </h2>
               <p className="es-map-stage-caption">
                 {filters.plant ? `${filters.plant} · ` : ''}
@@ -380,7 +433,41 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
             </div>
           </section>
 
-          {!qcGo ? (
+          {!qcGo && isManager ? (
+            <section className="es-manager-breakdown card" aria-labelledby="es-manager-bd-heading">
+              <h2 id="es-manager-bd-heading" className="es-manager-bd-title">
+                Production lines stopped
+              </h2>
+              <p className="es-manager-bd-lead">
+                Register below lists assets in <strong>Breakdown</strong> for the selected territory—useful for
+                leadership triage and handoff without expanding into full CMMS detail on this screen.
+              </p>
+              {assets.length === 0 ? (
+                <p className="es-manager-bd-empty">No stopped lines in this site selection for the demo scenario.</p>
+              ) : (
+                <table className="es-manager-bd-table">
+                  <thead>
+                    <tr>
+                      <th>Line / asset</th>
+                      <th>Plant</th>
+                      <th>Type</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {assets.map((a) => (
+                      <tr key={a.asset_id}>
+                        <td>{a.asset_id}</td>
+                        <td>{a.plant}</td>
+                        <td>{a.asset_type}</td>
+                        <td>{a.status}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </section>
+          ) : !qcGo ? (
             <>
               <h2 className="es-integrated-section-title">Integrated landing narrative</h2>
               <ExecutiveLandingStreams />
@@ -423,20 +510,53 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
         <div className="es-flow-banner es-flow-banner--hitl card" role="region" aria-label="Supervisor review">
           <h2 className="es-flow-banner-title">Human in the loop — supervisor release</h2>
           <p className="es-flow-banner-text">
-            After reviewing the analytics above, a supervisor acknowledges the No-Go exception here to open Anomalies,
-            root cause, role-specific recommendations, and planned downtime — closing the gap vs MFG Pro-only packaging
-            views.
+            After reviewing the analytics above, a supervisor acknowledges the No-Go exception here. You will still
+            need <strong>Enter detailed analysis</strong> (below, after release) to open the five-tab header navigation
+            (Anomalies → RCA → Recommendations → Planned downtime).
           </p>
           <div className="es-hitl-actions">
             <button
               type="button"
               className="es-flow-btn es-flow-btn--primary"
-              onClick={() => setFlow({ hitlApproved: true })}
+              onClick={() => setFlow((prev) => ({ ...prev, hitlApproved: true }))}
             >
               Supervisor: approve &amp; release assessment tabs
             </button>
           </div>
         </div>
+      ) : null}
+
+      {placeSelected && flow.outcome === 'no_go' ? (
+        <div className="es-inline-actions card" role="region" aria-label="Recommendations">
+          <button type="button" className="es-flow-btn" onClick={() => setRecModalOpen(true)}>
+            View recommendations
+          </button>
+        </div>
+      ) : null}
+
+      {placeSelected && flow.outcome === 'no_go' && flow.hitlApproved && !flow.detailedAnalysisUnlocked ? (
+        <div className="es-flow-banner es-flow-banner--detailed card" role="region" aria-label="Detailed analysis">
+          <h2 className="es-flow-banner-title">Detailed analysis workspace</h2>
+          <p className="es-flow-banner-text">
+            Recommendations are available in the popup and via <strong>View recommendations</strong>. When you are
+            ready for the full assessment route, open the five tabs in the header.
+          </p>
+          <div className="es-hitl-actions">
+            <button
+              type="button"
+              className="es-flow-btn es-flow-btn--primary"
+              onClick={() => setFlow((prev) => ({ ...prev, detailedAnalysisUnlocked: true }))}
+            >
+              Enter detailed analysis
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {placeSelected && flow.outcome === 'no_go' && flow.detailedAnalysisUnlocked ? (
+        <p className="es-detailed-unlocked card" role="status">
+          Detailed analysis is <strong>on</strong> — use the assessment tabs in the header to move across all five views.
+        </p>
       ) : null}
 
       {qcGo ? (
@@ -446,7 +566,12 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
             type="button"
             className="es-flow-btn es-flow-btn--primary"
             onClick={() => {
-              setFlow({ outcome: null, operatorRole: null, hitlApproved: false });
+              setFlow((prev) => ({
+                ...prev,
+                outcome: null,
+                hitlApproved: false,
+                detailedAnalysisUnlocked: false,
+              }));
               navigate('/upload');
             }}
           >
@@ -454,6 +579,15 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
           </button>
         </div>
       ) : null}
+
+      <ExecutiveRecommendationsModal
+        open={recModalOpen}
+        onClose={() => setRecModalOpen(false)}
+        filters={filters}
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
+        operatorRole={flow.operatorRole}
+      />
     </div>
   );
 };

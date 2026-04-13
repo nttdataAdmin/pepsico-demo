@@ -10,6 +10,9 @@ function defaultFlow() {
     outcome: null,
     operatorRole: null,
     hitlApproved: false,
+    detailedAnalysisUnlocked: false,
+    accountRole: null,
+    userEmail: null,
   };
 }
 
@@ -24,7 +27,10 @@ function readFlow() {
     if (outcome === 'no_go' && o.fullDashboard === true && o.hitlApproved === undefined) {
       hitlApproved = true;
     }
-    return { outcome, operatorRole, hitlApproved };
+    const detailedAnalysisUnlocked = !!o.detailedAnalysisUnlocked;
+    const accountRole = o.accountRole ?? null;
+    const userEmail = o.userEmail ?? null;
+    return { outcome, operatorRole, hitlApproved, detailedAnalysisUnlocked, accountRole, userEmail };
   } catch {
     return defaultFlow();
   }
@@ -86,8 +92,8 @@ export function AppFlowProvider({ children }) {
     loadExcel(false);
   }, [loadExcel]);
 
-  /** Full 5-tab bar only after No-Go supervisor release */
-  const showNavBar = flow.outcome === 'no_go' && flow.hitlApproved;
+  /** Full 5-tab bar only on No-Go after HITL + Enter detailed analysis (Go stays executive-only). */
+  const showNavBar = flow.outcome === 'no_go' && flow.hitlApproved && !!flow.detailedAnalysisUnlocked;
 
   const value = useMemo(
     () => ({

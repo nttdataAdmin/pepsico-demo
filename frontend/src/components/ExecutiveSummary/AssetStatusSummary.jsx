@@ -9,16 +9,18 @@ const SEGMENT_KEYS = {
   breakdown: 'breakdown',
 };
 
-const AssetStatusSummary = ({ summary, layout = 'vertical', interactive, onSegmentClick }) => {
+const AssetStatusSummary = ({ summary, layout = 'vertical', interactive, onSegmentClick, supervisorStrip }) => {
   if (!summary) return null;
 
-  const statusItems = [
-    { label: 'No. of Assets', value: summary.total, color: 'default' },
-    { label: 'Working', value: summary.working, color: 'working' },
-    { label: 'Failure Predicted', value: summary.failure_predicted, color: 'failure-predicted' },
-    { label: 'Under Maintenance', value: summary.under_maintenance, color: 'under-maintenance' },
-    { label: 'Breakdown', value: summary.breakdown, color: 'breakdown' },
-  ];
+  const statusItems = supervisorStrip
+    ? [{ label: 'Production stopped (assets)', value: summary.total, color: 'breakdown' }]
+    : [
+        { label: 'No. of Assets', value: summary.total, color: 'default' },
+        { label: 'Working', value: summary.working, color: 'working' },
+        { label: 'Failure Predicted', value: summary.failure_predicted, color: 'failure-predicted' },
+        { label: 'Under Maintenance', value: summary.under_maintenance, color: 'under-maintenance' },
+        { label: 'Breakdown', value: summary.breakdown, color: 'breakdown' },
+      ];
 
   return (
     <div

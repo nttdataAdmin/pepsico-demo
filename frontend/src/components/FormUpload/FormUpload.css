@@ -28,6 +28,16 @@
   font-size: 0.95rem;
 }
 
+.form-upload-lens-note {
+  margin: -0.5rem 0 1.25rem;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(0, 92, 188, 0.08);
+  border: 1px solid rgba(0, 92, 188, 0.2);
+  font-size: 0.88rem;
+  color: #003087;
+}
+
 .form-upload-drop {
   position: relative;
   display: flex;
