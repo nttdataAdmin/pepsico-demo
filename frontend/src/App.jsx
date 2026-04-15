@@ -58,7 +58,7 @@ function AuthenticatedShell({ user, onLogout }) {
     asset_id: null,
   });
 
-  const backgroundImageUrl = `${process.env.PUBLIC_URL}/backgroundf.PNG`;
+  const backgroundImageUrl = `${process.env.PUBLIC_URL}/login-background.png`;
   const appBgStyle = { position: 'relative' };
   const bgOverlayStyle = {
     position: 'fixed',
@@ -200,6 +200,7 @@ function AppInner() {
       detailedAnalysisUnlocked: false,
       accountRole: userData.accountRole || null,
       userEmail: userData.email || null,
+      formClassifyMeta: null,
     });
     setUser(userData);
     setIsAuthenticated(true);

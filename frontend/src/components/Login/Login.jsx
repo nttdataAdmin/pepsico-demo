@@ -19,7 +19,7 @@ const Login = ({ onLogin }) => {
   };
 
   const loginBgStyle = {
-    backgroundImage: `url(${process.env.PUBLIC_URL}/login.PNG)`,
+    backgroundImage: `url(${process.env.PUBLIC_URL}/login-background.png)`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',

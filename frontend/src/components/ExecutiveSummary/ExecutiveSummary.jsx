@@ -16,6 +16,7 @@ import { summarizeExecutiveFeeds } from '../../utils/agenticSynthesis';
 import { SITE_LOCATIONS } from '../../config/siteLocations';
 import ExecutiveKeyMetrics from './ExecutiveKeyMetrics';
 import ExecutiveRecommendationsModal from './ExecutiveRecommendationsModal';
+import { getNoGoPitchNarrative } from './nogoPitchNarrative';
 import './ExecutiveSummary.css';
 
 const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChange }) => {
@@ -29,6 +30,11 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
   const [recModalOpen, setRecModalOpen] = useState(false);
   const recAutoShownRef = useRef(false);
   const feeds = useMemo(() => summarizeExecutiveFeeds(excelBundle || {}), [excelBundle]);
+
+  const noGoPitch = useMemo(() => {
+    if (!qcNoGo || !flow.formClassifyMeta) return null;
+    return getNoGoPitchNarrative(flow.operatorRole);
+  }, [qcNoGo, flow.formClassifyMeta, flow.operatorRole]);
 
   const [summary, setSummary] = useState(null);
   const [assets, setAssets] = useState([]);
@@ -103,6 +109,7 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
           operatorRole: flow.operatorRole,
           accountRole: flow.accountRole,
           detailedAnalysisUnlocked: flow.detailedAnalysisUnlocked,
+          formClassifyMeta: flow.formClassifyMeta,
         },
         null,
         2
@@ -124,6 +131,7 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
     flow.operatorRole,
     flow.accountRole,
     flow.detailedAnalysisUnlocked,
+    flow.formClassifyMeta,
   ]);
 
   usePageChatKnowledge(chatKnowledge);
@@ -241,6 +249,29 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
           <strong>No-Go classification.</strong> Review live KPIs, map, feeds, and fleet detail below. When finished,
           scroll to the <strong>end of the page</strong> for supervisor release, then <strong>Enter detailed analysis</strong>{' '}
           to open Anomalies, RCA, Recommendations, and Planned downtime.
+        </div>
+      ) : null}
+
+      {qcNoGo && flow.formClassifyMeta && noGoPitch ? (
+        <div className="es-nogo-breakdown card" role="region" aria-labelledby="nogo-breakdown-heading">
+          <h2 id="nogo-breakdown-heading" className="es-nogo-breakdown-title">
+            {noGoPitch.title}
+          </h2>
+          <p className="es-nogo-breakdown-lead">{noGoPitch.lead}</p>
+          <div className="es-nogo-extraction" role="region" aria-label={noGoPitch.extractionHeading}>
+            <h3 className="es-nogo-subheading">{noGoPitch.extractionHeading}</h3>
+            <p className="es-nogo-extraction-text">{noGoPitch.extraction}</p>
+          </div>
+          <div className="es-nogo-why" role="region" aria-label={noGoPitch.whyHeading}>
+            <h3 className="es-nogo-subheading">{noGoPitch.whyHeading}</h3>
+            <p className="es-nogo-why-text">{noGoPitch.why}</p>
+          </div>
+          <h3 className="es-nogo-subheading">{noGoPitch.stepsHeading}</h3>
+          <ul className="es-nogo-breakdown-list">
+            {noGoPitch.steps.map((line, i) => (
+              <li key={i}>{line}</li>
+            ))}
+          </ul>
         </div>
       ) : null}
 
@@ -571,6 +602,7 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
                 outcome: null,
                 hitlApproved: false,
                 detailedAnalysisUnlocked: false,
+                formClassifyMeta: null,
               }));
               navigate('/upload');
             }}
@@ -587,6 +619,7 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
         selectedMonth={selectedMonth}
         selectedYear={selectedYear}
         operatorRole={flow.operatorRole}
+        userEmail={flow.userEmail}
       />
     </div>
   );

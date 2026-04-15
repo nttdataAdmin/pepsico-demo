@@ -13,6 +13,7 @@ function defaultFlow() {
     detailedAnalysisUnlocked: false,
     accountRole: null,
     userEmail: null,
+    formClassifyMeta: null,
   };
 }
 
@@ -30,7 +31,16 @@ function readFlow() {
     const detailedAnalysisUnlocked = !!o.detailedAnalysisUnlocked;
     const accountRole = o.accountRole ?? null;
     const userEmail = o.userEmail ?? null;
-    return { outcome, operatorRole, hitlApproved, detailedAnalysisUnlocked, accountRole, userEmail };
+    const formClassifyMeta = o.formClassifyMeta ?? null;
+    return {
+      outcome,
+      operatorRole,
+      hitlApproved,
+      detailedAnalysisUnlocked,
+      accountRole,
+      userEmail,
+      formClassifyMeta,
+    };
   } catch {
     return defaultFlow();
   }

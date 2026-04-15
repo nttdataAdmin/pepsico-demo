@@ -47,6 +47,16 @@ export default function FormUpload({ onLogout }) {
         const isNoGo = res.classification === 'no_go';
         await loadExcel(true);
 
+        const formClassifyMeta = {
+          classification: res.classification,
+          method: res.method,
+          confidence: res.confidence,
+          breakdown: Array.isArray(res.breakdown) ? res.breakdown : [],
+          details: res.details && typeof res.details === 'object' ? res.details : {},
+          extraction_summary: typeof res.extraction_summary === 'string' ? res.extraction_summary : '',
+          why_no_go: typeof res.why_no_go === 'string' ? res.why_no_go : '',
+        };
+
         if (isNoGo) {
           setFlow((prev) => ({
             ...prev,
@@ -54,6 +64,7 @@ export default function FormUpload({ onLogout }) {
             operatorRole,
             hitlApproved: false,
             detailedAnalysisUnlocked: false,
+            formClassifyMeta,
           }));
           navigate('/executive-summary', { replace: true });
         } else {
@@ -63,6 +74,7 @@ export default function FormUpload({ onLogout }) {
             operatorRole,
             hitlApproved: false,
             detailedAnalysisUnlocked: false,
+            formClassifyMeta,
           }));
           navigate('/executive-summary', { replace: true });
         }
@@ -108,7 +120,20 @@ export default function FormUpload({ onLogout }) {
           <span>{busy ? 'Processing…' : 'Choose file or drop here'}</span>
         </label>
 
-        {err && <div className="form-upload-error">{err}</div>}
+        {err ? (
+          <div className="form-upload-error" role="alert">
+            <strong className="form-upload-error-title">Something went wrong</strong>
+            <ul className="form-upload-error-list">
+              {String(err)
+                .split(/\n+/)
+                .map((s) => s.trim())
+                .filter(Boolean)
+                .map((line, i) => (
+                  <li key={i}>{line}</li>
+                ))}
+            </ul>
+          </div>
+        ) : null}
       </div>
     </div>
   );

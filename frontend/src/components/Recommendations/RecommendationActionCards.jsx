@@ -1,7 +1,12 @@
-import React, { useState } from 'react';
-import { formatCmmsRecommendationRecordLine } from '../../data/mockData';
+import React, { useState, useMemo, useCallback } from 'react';
+import { formatCmmsRecommendationRecordLine, getAssignableWorkcenterRoleNames } from '../../data/mockData';
+import RecommendationReviewControls from './RecommendationReviewControls';
 import './RecommendationsTable.css';
 import './RecommendationActionCards.css';
+
+function defaultRecReview() {
+  return { assignee: '__self__', decision: null, amendedText: '', editing: false, editDraft: '' };
+}
 
 const RecommendationActionCards = ({
   recommendations,
@@ -10,8 +15,18 @@ const RecommendationActionCards = ({
   aiRecommendation,
   aiRecommendations,
   onClosePopup,
+  userEmail,
 }) => {
   const [selectedAsset, setSelectedAsset] = useState(null);
+  const [reviewByAsset, setReviewByAsset] = useState({});
+  const assignableRoles = useMemo(() => getAssignableWorkcenterRoleNames(), []);
+
+  const patchReview = useCallback((assetId, patch) => {
+    setReviewByAsset((prev) => ({
+      ...prev,
+      [assetId]: { ...defaultRecReview(), ...prev[assetId], ...patch },
+    }));
+  }, []);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -30,6 +45,10 @@ const RecommendationActionCards = ({
     setSelectedAsset(assetId);
     onGetAIRecommendation(assetId);
   };
+
+  const rev = selectedAsset ? { ...defaultRecReview(), ...reviewByAsset[selectedAsset] } : null;
+  const displayedAi =
+    rev?.decision === 'edited' && String(rev.amendedText || '').trim() ? rev.amendedText : aiRecommendation;
 
   if (!recommendations.length) {
     return (
@@ -108,7 +127,7 @@ const RecommendationActionCards = ({
             </div>
             <div className="ai-content">
               <div className="ai-steps">
-                {aiRecommendation.split('\n').map((line, index) => {
+                {(displayedAi || '').split('\n').map((line, index) => {
                   if (line.trim() === '') return <br key={index} />;
                   if (line.match(/^#{1,3}\s/)) {
                     const level = line.match(/^#+/)[0].length;
@@ -169,6 +188,41 @@ const RecommendationActionCards = ({
                 })}
               </div>
             </div>
+            {selectedAsset && aiRecommendation ? (
+              <RecommendationReviewControls
+                assignee={rev.assignee}
+                assignableRoles={assignableRoles}
+                userEmail={userEmail}
+                decision={rev.decision}
+                editing={rev.editing}
+                editDraft={rev.editing ? rev.editDraft : ''}
+                onAssigneeChange={(v) => patchReview(selectedAsset, { assignee: v })}
+                onEditDraftChange={(v) => patchReview(selectedAsset, { editDraft: v })}
+                onAccept={() => patchReview(selectedAsset, { decision: 'accepted', editing: false })}
+                onDecline={() => patchReview(selectedAsset, { decision: 'declined', editing: false })}
+                onStartEdit={() => patchReview(selectedAsset, { editing: true, editDraft: aiRecommendation || '' })}
+                onCancelEdit={() => patchReview(selectedAsset, { editing: false, editDraft: '' })}
+                onSaveEdit={() => {
+                  const aid = selectedAsset;
+                  const base = aiRecommendation;
+                  setReviewByAsset((prev) => {
+                    const cur = { ...defaultRecReview(), ...prev[aid] };
+                    const text = String(cur.editDraft || '').trim() || (base || '');
+                    return {
+                      ...prev,
+                      [aid]: {
+                        ...cur,
+                        decision: 'edited',
+                        amendedText: text,
+                        editing: false,
+                        editDraft: '',
+                      },
+                    };
+                  });
+                }}
+                onClearDecision={() => patchReview(selectedAsset, { decision: null, amendedText: '', editing: false })}
+              />
+            ) : null}
           </div>
         </div>
       )}

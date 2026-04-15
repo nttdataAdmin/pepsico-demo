@@ -223,6 +223,75 @@
   border: 1px solid #ffccbc;
 }
 
+.es-nogo-breakdown {
+  margin-bottom: 1rem;
+  padding: 0.9rem 1.1rem 1rem;
+  background: #fff;
+  border: 1px solid rgba(0, 48, 135, 0.18);
+  border-radius: 10px;
+}
+
+.es-nogo-breakdown-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  color: #003087;
+}
+
+.es-nogo-breakdown-lead {
+  margin: 0 0 0.65rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #4a5560;
+}
+
+.es-nogo-breakdown-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: #2a3540;
+}
+
+.es-nogo-subheading {
+  margin: 0 0 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #003087;
+}
+
+.es-nogo-extraction {
+  margin: 0.75rem 0 0.85rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 8px;
+  background: #f4f8fc;
+  border: 1px solid rgba(0, 92, 188, 0.18);
+}
+
+.es-nogo-extraction-text {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: #2a3540;
+}
+
+.es-nogo-why {
+  margin: 0 0 0.85rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 8px;
+  background: #fff8f5;
+  border: 1px solid rgba(180, 80, 40, 0.22);
+}
+
+.es-nogo-why-text {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: #4a3028;
+  font-weight: 500;
+}
+
 .es-go-signals {
   margin-bottom: 1rem;
   padding: 1rem 1.15rem;

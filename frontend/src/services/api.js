@@ -9,6 +9,32 @@ export const API_BASE_URL = (process.env.REACT_APP_API_URL || '').replace(/\/$/,
 /** Human-readable hint for errors / UI */
 export const API_DISPLAY_URL = API_BASE_URL || '(dev proxy → http://127.0.0.1:9898)';
 
+/** Parse FastAPI / JSON error bodies into a multi-line message for the UI. */
+export function formatApiErrorBodyText(bodyText) {
+  if (!bodyText || !String(bodyText).trim()) return '';
+  const t = String(bodyText).trim();
+  try {
+    const j = JSON.parse(t);
+    if (Array.isArray(j.detail)) {
+      return j.detail
+        .map((d) => {
+          if (typeof d === 'string') return d;
+          if (d?.msg) {
+            const loc = Array.isArray(d.loc) ? d.loc.filter(Boolean).join('.') : '';
+            return loc ? `${loc}: ${d.msg}` : d.msg;
+          }
+          return JSON.stringify(d);
+        })
+        .join('\n');
+    }
+    if (typeof j.detail === 'string') return j.detail;
+    if (j.message) return String(j.message);
+  } catch {
+    return t;
+  }
+  return t;
+}
+
 const api = axios.create({
   baseURL: API_BASE_URL || undefined,
   headers: {
@@ -174,7 +200,8 @@ export const classifyForm = async (file, clientHint) => {
   }
   if (!res.ok) {
     const t = await res.text();
-    throw new Error(t || `Classify failed (${res.status})`);
+    const detail = formatApiErrorBodyText(t) || `Classify failed (${res.status})`;
+    throw new Error(detail);
   }
   return res.json();
 };

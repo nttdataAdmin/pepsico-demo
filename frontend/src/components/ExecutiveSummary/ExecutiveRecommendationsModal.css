@@ -12,7 +12,7 @@
 }
 
 .es-rec-modal {
-  width: min(640px, 100%);
+  width: min(960px, 100%);
   max-height: min(90vh, 760px);
   display: flex;
   flex-direction: column;

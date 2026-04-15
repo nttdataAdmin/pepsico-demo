@@ -742,6 +742,10 @@ export const WORKCENTER_ROLES_MASTER = [
   { Roleid: 'R021', Rolename: 'Maintenance Technician II' },
 ];
 
+export function getAssignableWorkcenterRoleNames() {
+  return WORKCENTER_ROLES_MASTER.map((r) => r.Rolename);
+}
+
 /** CMMS routing: same string on Maintenance, Recommendations, and synthesis guidance (AI prompt). */
 export const ASSET_MAINTENANCE_RESPONSIBLE = {
   'BEL-PUMP-001': 'Maintenance Supervisor + Reliability Engineer',

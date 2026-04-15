@@ -1,8 +1,13 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { getRecommendations, getAssetsFiltered } from '../../data/mockData';
+import { getRecommendations, getAssetsFiltered, getAssignableWorkcenterRoleNames } from '../../data/mockData';
 import { getAIRecommendation } from '../../services/aiService';
+import RecommendationReviewControls from '../Recommendations/RecommendationReviewControls';
 import './ExecutiveRecommendationsModal.css';
+
+function defaultRecReview() {
+  return { assignee: '__self__', decision: null, amendedText: '', editing: false, editDraft: '' };
+}
 
 function rowKey(r) {
   return `${r.asset_id}-${r.month}-${r.recommendation_engine || ''}`;
@@ -15,12 +20,23 @@ export default function ExecutiveRecommendationsModal({
   selectedMonth,
   selectedYear,
   operatorRole,
+  userEmail,
 }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedKey, setSelectedKey] = useState(null);
   const [guidance, setGuidance] = useState(null);
   const [guidanceLoading, setGuidanceLoading] = useState(false);
+  const [reviewByKey, setReviewByKey] = useState({});
+  const assignableRoles = useMemo(() => getAssignableWorkcenterRoleNames(), []);
+
+  const patchReview = useCallback((key, patch) => {
+    if (!key) return;
+    setReviewByKey((prev) => ({
+      ...prev,
+      [key]: { ...defaultRecReview(), ...prev[key], ...patch },
+    }));
+  }, []);
 
   const filterParams = useMemo(() => {
     const monthMap = {
@@ -65,6 +81,7 @@ export default function ExecutiveRecommendationsModal({
     setSelectedKey(null);
     setGuidance(null);
     setGuidanceLoading(false);
+    setReviewByKey({});
   }, [rows]);
 
   const loadGuidance = useCallback(
@@ -100,6 +117,10 @@ export default function ExecutiveRecommendationsModal({
   );
 
   if (!open) return null;
+
+  const rev = selectedKey ? { ...defaultRecReview(), ...reviewByKey[selectedKey] } : null;
+  const displayedGuidance =
+    rev?.decision === 'edited' && String(rev.amendedText || '').trim() ? rev.amendedText : guidance;
 
   const modal = (
     <div
@@ -157,8 +178,43 @@ export default function ExecutiveRecommendationsModal({
                 <h3 className="es-rec-modal-guidance-title">Synthesised guidance</h3>
                 {guidanceLoading ? (
                   <p className="es-rec-modal-guidance-loading">Generating guidance…</p>
-                ) : guidance ? (
-                  <div className="es-rec-modal-guidance-body">{guidance}</div>
+                ) : displayedGuidance ? (
+                  <div className="es-rec-modal-guidance-body">{displayedGuidance}</div>
+                ) : null}
+                {selectedKey && !guidanceLoading && guidance ? (
+                  <RecommendationReviewControls
+                    assignee={rev.assignee}
+                    assignableRoles={assignableRoles}
+                    userEmail={userEmail}
+                    decision={rev.decision}
+                    editing={rev.editing}
+                    editDraft={rev.editing ? rev.editDraft : ''}
+                    onAssigneeChange={(v) => patchReview(selectedKey, { assignee: v })}
+                    onEditDraftChange={(v) => patchReview(selectedKey, { editDraft: v })}
+                    onAccept={() => patchReview(selectedKey, { decision: 'accepted', editing: false })}
+                    onDecline={() => patchReview(selectedKey, { decision: 'declined', editing: false })}
+                    onStartEdit={() => patchReview(selectedKey, { editing: true, editDraft: guidance || '' })}
+                    onCancelEdit={() => patchReview(selectedKey, { editing: false, editDraft: '' })}
+                    onSaveEdit={() => {
+                      const g = guidance;
+                      const k = selectedKey;
+                      setReviewByKey((prev) => {
+                        const cur = { ...defaultRecReview(), ...prev[k] };
+                        const text = String(cur.editDraft || '').trim() || (g || '');
+                        return {
+                          ...prev,
+                          [k]: {
+                            ...cur,
+                            decision: 'edited',
+                            amendedText: text,
+                            editing: false,
+                            editDraft: '',
+                          },
+                        };
+                      });
+                    }}
+                    onClearDecision={() => patchReview(selectedKey, { decision: null, amendedText: '', editing: false })}
+                  />
                 ) : null}
               </aside>
             )}

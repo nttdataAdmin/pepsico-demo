@@ -189,6 +189,7 @@ const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange
         aiRecommendation={aiRecommendation}
         aiRecommendations={aiRecommendations}
         onClosePopup={() => setAiRecommendation(null)}
+        userEmail={flow.userEmail}
       />
 
       <div className="rec-legend">
