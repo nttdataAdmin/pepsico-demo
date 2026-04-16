@@ -1,5 +1,5 @@
 /**
- * Tabular previews for Executive Key metrics (Excel sheets + mock fleet/telemetry).
+ * Tabular previews for Executive Key metrics (integrated pipeline feeds + fleet / historian mocks).
  */
 
 import { getAssetsFiltered } from '../data/mockData';
@@ -58,7 +58,8 @@ export function getExecutiveKpiDataPreview(tileId, ctx) {
     if (!sh) {
       return {
         title: 'Consumer complaint load',
-        subtitle: 'Load super_excel.xlsx to see Consumer_Complaints sheet data.',
+        subtitle:
+          'Consumer experience pipeline is not synchronized yet—connect operational feeds to hydrate this KPI.',
         columns: [],
         rows: [],
         source: 'none',
@@ -68,8 +69,8 @@ export function getExecutiveKpiDataPreview(tileId, ctx) {
     const slice = list.slice(0, PREVIEW_ROW_CAP);
     const cols = pickColumns(sh.columns, slice[0], MAX_COLS);
     return {
-      title: 'Consumer_Complaints (super_excel)',
-      subtitle: 'Sheet backing the complaint-load index for the selected scope.',
+      title: 'Consumer experience pipeline',
+      subtitle: 'Integrated feed backing the complaint-load index for your territory, plant filter, and operator lens.',
       columns: cols,
       rows: projectRows(slice, cols),
       source: 'excel',
@@ -81,7 +82,8 @@ export function getExecutiveKpiDataPreview(tileId, ctx) {
     if (!sh) {
       return {
         title: 'Worker satisfaction',
-        subtitle: 'Load super_excel.xlsx to see Worker_Satisfaction sheet data.',
+        subtitle:
+          'Workforce pulse pipeline is not synchronized yet—connect operational feeds to hydrate this KPI.',
         columns: [],
         rows: [],
         source: 'none',
@@ -90,8 +92,8 @@ export function getExecutiveKpiDataPreview(tileId, ctx) {
     const slice = sh.rows.slice(0, PREVIEW_ROW_CAP);
     const cols = pickColumns(sh.columns, slice[0], MAX_COLS);
     return {
-      title: 'Worker_Satisfaction (super_excel)',
-      subtitle: 'Sheet backing the worker satisfaction KPI.',
+      title: 'Workforce pulse pipeline',
+      subtitle: 'Integrated feed backing the worker satisfaction KPI for your territory and operator lens.',
       columns: cols,
       rows: projectRows(slice, cols),
       source: 'excel',
@@ -103,7 +105,8 @@ export function getExecutiveKpiDataPreview(tileId, ctx) {
     if (!sh) {
       return {
         title: 'Quality score',
-        subtitle: 'Load super_excel.xlsx to see KPI_Quality sheet data.',
+        subtitle:
+          'Batch quality pipeline is not synchronized yet—connect operational feeds to hydrate this KPI.',
         columns: [],
         rows: [],
         source: 'none',
@@ -112,8 +115,8 @@ export function getExecutiveKpiDataPreview(tileId, ctx) {
     const slice = sh.rows.slice(0, PREVIEW_ROW_CAP);
     const cols = pickColumns(sh.columns, slice[0], MAX_COLS);
     return {
-      title: 'KPI_Quality (super_excel)',
-      subtitle: 'Sheet backing the quality score KPI.',
+      title: 'Batch quality pipeline',
+      subtitle: 'Integrated feed backing the quality score KPI for your territory and operator lens.',
       columns: cols,
       rows: projectRows(slice, cols),
       source: 'excel',
@@ -131,7 +134,7 @@ export function getExecutiveKpiDataPreview(tileId, ctx) {
     });
     return {
       title: `Fleet snapshot · ${tileId}`,
-      subtitle: 'Assets in scope for wastage, throughput, and downtime on the executive strip.',
+      subtitle: 'Fleet registry for the selected site, plant, and operator lens—drives wastage, throughput, and downtime.',
       columns: cols,
       rows,
       source: 'mock',
@@ -151,8 +154,8 @@ export function getExecutiveKpiDataPreview(tileId, ctx) {
       title: tileId === 'temp' ? 'Temperature · historian points' : 'Vibration · historian points',
       subtitle:
         raw.length > 0
-          ? 'Historian readings for assets in this executive scope.'
-          : 'No telemetry rows for this filter.',
+          ? 'Historian readings for the selected site, plant, asset filter, and operator lens.'
+          : 'No telemetry rows for this location and operator lens.',
       columns: cols,
       rows,
       source: 'mock',

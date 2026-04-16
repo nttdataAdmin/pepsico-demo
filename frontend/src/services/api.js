@@ -162,7 +162,7 @@ export const postAssistantChat = async (body) => {
   return response.data;
 };
 
-/** All sheets from super_excel.xlsx (via backend). */
+/** Bundled operational pipeline sheets (backend integration service). */
 export const getSuperExcel = async () => {
   const response = await api.get('/api/super-excel');
   return response.data;

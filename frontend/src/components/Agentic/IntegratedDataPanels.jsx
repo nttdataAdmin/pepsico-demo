@@ -16,12 +16,7 @@ export function DataFeedHint() {
     return <p className="agentic-feed-hint">Synchronizing cross-system operational feeds…</p>;
   }
   if (excelError && !excelBundle) {
-    return (
-      <p className="agentic-feed-hint agentic-feed-hint--error">
-        Integration service unavailable. Fleet and telemetry views still load from the asset registry; fused
-        narratives will appear when connectivity is restored.
-      </p>
-    );
+    return null;
   }
   return null;
 }

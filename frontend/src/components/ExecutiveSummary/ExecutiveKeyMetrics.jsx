@@ -83,7 +83,7 @@ function BandBadge({ band }) {
 }
 
 /**
- * Key metrics: fleet-derived + super_excel (Consumer_Complaints, Worker_Satisfaction, KPI_Quality) when loaded.
+ * Key metrics: fleet + historian mocks, plus integrated pipeline feeds (consumer, workforce, quality) when synchronized.
  */
 export default function ExecutiveKeyMetrics({
   filters,
@@ -162,7 +162,7 @@ export default function ExecutiveKeyMetrics({
       label: 'Consumer complaint load',
       value: `${model.consumerComplaintLoadPct.toFixed(1)}%`,
       band: model.bands.consumerComplaints,
-      sub: 'Lower is better · blended from Consumer_Complaints in super_excel',
+      sub: 'Lower is better · consumer experience pipeline (region-aware with your site)',
       whyTitle: 'Why this % · complaints',
       whyBody: model.reasons.consumerComplaints,
     },
@@ -180,7 +180,7 @@ export default function ExecutiveKeyMetrics({
       label: 'Quality score',
       value: `${model.qualityScorePct.toFixed(1)}%`,
       band: model.bands.quality,
-      sub: 'Mean QualityScore from KPI_Quality sheet when workbook is loaded',
+      sub: 'Mean batch quality score when the quality pipeline feed is synchronized',
       whyTitle: 'Why this % · quality',
       whyBody: model.reasons.quality,
     },
@@ -189,7 +189,7 @@ export default function ExecutiveKeyMetrics({
       label: 'Worker satisfaction',
       value: `${model.workerSatisfactionPct.toFixed(1)}%`,
       band: model.bands.workerSatisfaction,
-      sub: 'Comfort + efficiency perception from Worker_Satisfaction sheet',
+      sub: 'Comfort + efficiency perception from the workforce pulse pipeline',
       whyTitle: 'Why this % · worker satisfaction',
       whyBody: model.reasons.workerSatisfaction,
     },
@@ -233,11 +233,13 @@ export default function ExecutiveKeyMetrics({
     <section className="es-key-metrics card" aria-label="Key production metrics">
       <h3 className="es-key-metrics-title">Key metrics</h3>
       <p className="es-key-metrics-lead">
-        Percentages react to state, plant, operator lens, QC path, and period. Consumer complaints, quality score, and
-        worker satisfaction pull from <strong>super_excel.xlsx</strong> when the workbook is loaded; the rest blend fleet
-        counts with telemetry. The small <strong>grid</strong> icon opens backing tables (Excel sheets for complaints,
-        worker satisfaction, and quality; fleet and historian elsewhere). Use <strong>Why this %</strong> (or{' '}
-        <strong>Why this value</strong> on temperature / vibration) for the derivation note.
+        KPIs are <strong>dynamic</strong> with your <strong>location</strong> (state / plant), <strong>operator lens</strong>{' '}
+        (packaging, processing, or manager roll-up), <strong>QC path</strong>, and <strong>period</strong>. Complaint load,
+        quality score, and worker satisfaction draw from the <strong>integrated operational data pipeline</strong> when
+        feeds are synchronized; wastage, throughput, downtime, and telemetry blend the <strong>fleet registry</strong> with
+        line historian signals for the same scope. The <strong>grid</strong> icon opens backing tables for each metric.
+        Use <strong>Why this %</strong> (or <strong>Why this value</strong> on temperature / vibration) for the derivation
+        note.
       </p>
       <div className="es-key-metrics-grid">
         {tiles.map((it) => (

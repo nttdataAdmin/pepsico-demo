@@ -24,10 +24,11 @@ export default function GoSuccessModal({ open, onLogout, onUploadAnother }) {
           </svg>
         </div>
         <h2 id="go-modal-title" className="go-modal-title">
-          Everything is good
+          Go cleared — release criteria passed
         </h2>
         <p className="go-modal-text">
-          Your package quality form classified as <strong>Go</strong>. No remediation workflow is required.
+          Your package quality form classified as <strong>Go</strong>. Extracted machine/code traceability and
+          quality-control checks cleared policy limits, with positive KPI posture (quality, productivity, and wastage).
         </p>
         <div className="go-modal-actions">
           {onUploadAnother && (

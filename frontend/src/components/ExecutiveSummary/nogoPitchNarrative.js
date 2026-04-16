@@ -8,35 +8,39 @@ const NO_GO_PITCH_BY_LENS = {
   packaging: {
     title: 'No-Go — packaging quality gate',
     lead:
-      'The uploaded form was read through the packaging quality model. Structured fields were extracted from the scan and evaluated against the active release matrix for your packaging line context. One or more controls did not clear, so the gate stays closed until the documented exception path completes.',
+      'The uploaded job-aid form was read through the packaging quality gate model. Key traceability and release-control fields were extracted from the scan, matched to active SKU limits, and correlated with executive KPI movement. The gate stays closed because one or more packaging controls did not clear for this run.',
     extractionHeading: 'What the read captured',
     extraction:
-      'Vision OCR returned line and run identifiers, the seal-integrity checklist row (bead continuity / closure torque band), case label alignment versus the SKU master, metal-detection acknowledgment, and the case-weight tolerance band. Values were normalized to the packaging quality schema and time-stamped to the submission window.',
+      'OCR captured machine number, UPC / film code, shift / time context, nitrogen flush O2, bag weight, air-fill checks, and package-quality checklist rows (seal integrity, package appearance, product-in-bag, date / code checks).',
     whyHeading: 'Why this is a No-Go',
     why:
-      'Seal, label, or weight controls crossed the validated tolerance for this SKU and window. Under plant policy that combination is treated as a failed packaging gate: product cannot advance to ship until corrective action is recorded and the supervisor workflow is satisfied.',
+      'One or more packaging controls from the scanned form did not satisfy validated limits or required GO confirmations for this SKU / shift window. Policy treats that as a failed release gate: product cannot move forward until corrective action and supervisor sign-off are completed.',
     stepsHeading: 'How the decision was reached',
     steps: [
-      'Document read: seal, label, metal-detection, and weight fields were extracted from the scan and checked for completeness and internal consistency.',
-      'Policy check: extracted values were compared to the active release matrix (limits, SKU pairing, and acknowledgment rules).',
-      'Outcome: the gate failed because at least one mandatory control did not meet the release band — the line remains on hold until remediation and sign-off.',
+      'Form-field extraction: machine no., UPC / film code, nitrogen O2, weight, air-fill levels, and package-quality checklist outcomes were read from the submitted job aid.',
+      'Traceability validation: machine and UPC / film-code pairing were checked against the active packaging run context for this location and operator lens.',
+      'Release-policy validation: numeric bands and GO / NO-GO checklist requirements were evaluated against the approved SKU limits.',
+      'KPI correlation: failed packaging checks raise expected risk on Quality score, Productivity index, and Wastage (rework / hold / scrap pressure).',
+      'Decision: No-Go is issued because required release controls did not clear; production remains on controlled hold until correction and sign-off.',
     ],
   },
   processing: {
     title: 'No-Go — process parameter gate',
     lead:
-      'The submitted operator form was ingested through the process read path. Critical control points and numeric bands from the scan were aligned to the validated recipe and thermal profile for your processing lens. The engine returned a hold because the read did not satisfy all release criteria for this run.',
+      'The submitted operator job-aid form was ingested through the process read path with packaging quality checkpoints. Extracted run fields and control rows were validated against active recipe / release criteria, then correlated to executive KPIs. The engine returned No-Go because mandatory controls did not fully clear.',
     extractionHeading: 'What the read captured',
     extraction:
-      'OCR and field detection pulled moisture / solids window, fryer oil turnover index, critical hold temperatures, seasoning applied rate versus target, and the CCP sign-off row. Values were mapped to the processing parameter schema with shift and SKU context from the form header.',
+      'OCR and field detection captured machine number, UPC / film code, shift / time, nitrogen flush O2, weight, air-fill checks, and quality-critical checklist rows from the form image.',
     whyHeading: 'Why this is a No-Go',
     why:
-      'One or more critical parameters or required CCP confirmations fell outside the validated limits for this SKU and shift. Process policy treats that as a failed gate: the cook / hold path cannot be cleared for release until the deviation is dispositioned and the supervisor path completes.',
+      'At least one required control (numeric band or mandatory GO confirmation) fell outside validated release conditions for this SKU / shift. Policy therefore blocks release and keeps the run on hold until deviation disposition and supervisor workflow completion.',
     stepsHeading: 'How the decision was reached',
     steps: [
-      'Document read: CCP rows and numeric bands were extracted from the scan and reviewed for completeness and plausible range.',
-      'Policy check: readings were compared to the active thermal and compositional limits for the SKU in scope.',
-      'Outcome: the gate failed because a mandatory parameter or sign-off did not clear — production remains on hold until corrective action is documented.',
+      'Form-field extraction: machine no., UPC / film code, O2, weight, air-fill values, and quality checklist outcomes were parsed from the job-aid image.',
+      'Scope anchoring: extracted fields were tied to the selected location, plant context, and active operator role before evaluation.',
+      'Policy check: each required control was compared to release limits and mandatory GO criteria for the run.',
+      'KPI impact correlation: failed controls increase expected pressure on Quality score, Productivity index, and Wastage in this scope.',
+      'Outcome: No-Go remains active because one or more mandatory controls did not clear; production stays on hold until corrective action is recorded.',
     ],
   },
   manager: {
@@ -45,7 +49,7 @@ const NO_GO_PITCH_BY_LENS = {
       'The submitted form was evaluated at the regional compliance layer. The read summarizes site, line, severity, and non-conformance category so Grade 2 supervisors can see why the gate did not clear without drilling into operator-level fields first.',
     extractionHeading: 'What the read captured',
     extraction:
-      'Structured extraction identified site and line designation, run window, non-conformance category, severity flag, and the responsible work-center block from the form image. Those elements were normalized to the regional exception schema for rollup to KPI and audit views.',
+      'Structured extraction identified site and line designation, run window, non-conformance category, severity flag, and the responsible work-center block from the form image.',
     whyHeading: 'Why this is a No-Go',
     why:
       'Corporate release policy for this exception class requires a documented hold at regional visibility until disposition is aligned with the site. The gate therefore remains No-Go until supervisor acknowledgment and any required cross-functional sign-off are complete.',

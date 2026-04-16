@@ -1,6 +1,6 @@
 /**
  * Shared executive KPI math for Key metrics strip, tooltips, and AI recommendation context.
- * Pulls Consumer_Complaints, Worker_Satisfaction, KPI_Quality from super_excel bundle when present.
+ * Blends fleet + historian mocks with integrated pipeline feeds (consumer, workforce, quality) when synchronized.
  */
 
 import { getAnomalies, getAssetsFiltered, buildSummaryFromAssets } from '../data/mockData';
@@ -83,7 +83,7 @@ function bandLowerBetter(pct, goodBelow, warnAbove) {
 }
 
 function excelConsumerLoadPct(rows, state) {
-  if (!rows.length) return { pct: 6.2, note: 'Workbook has no Consumer_Complaints rows; showing nominal index.' };
+  if (!rows.length) return { pct: 6.2, note: 'Consumer experience pipeline not hydrated; showing nominal complaint-load index.' };
   let list = rows;
   if (state) {
     const st = String(state).toLowerCase();
@@ -104,12 +104,12 @@ function excelConsumerLoadPct(rows, state) {
   const pct = Math.min(42, Math.round((score / Math.max(list.length * 10, 1)) * 100 * 10) / 10);
   return {
     pct,
-    note: `Derived from Consumer_Complaints (${list.length} row(s) in scope): severity mix × volume → complaint-load index. Higher = more escalation pressure.`,
+    note: `Derived from consumer experience pipeline (${list.length} record(s) in scope): severity mix × volume → complaint-load index. Higher = more escalation pressure.`,
   };
 }
 
 function excelWorkerSatPct(rows) {
-  if (!rows.length) return { pct: 82.0, note: 'No Worker_Satisfaction rows; nominal team pulse.' };
+  if (!rows.length) return { pct: 82.0, note: 'Workforce pulse pipeline not hydrated; nominal team pulse.' };
   const vals = [];
   for (const r of rows) {
     const a = Number(r['Comfort_New_Method(1-5)']);
@@ -121,17 +121,17 @@ function excelWorkerSatPct(rows) {
   const pct = m != null ? Math.round(m * 10) / 10 : 80;
   return {
     pct,
-    note: `From Worker_Satisfaction: mean of comfort + efficiency perception (1–5 each), scaled to %. Aligned to super_excel.xlsx.`,
+    note: `From workforce pulse pipeline: mean of comfort + efficiency perception (1–5 each), scaled to %.`,
   };
 }
 
 function excelQualityPct(rows) {
-  if (!rows.length) return { pct: 91.5, note: 'No KPI_Quality rows; nominal quality score.' };
+  if (!rows.length) return { pct: 91.5, note: 'Batch quality pipeline not hydrated; nominal quality score.' };
   const nums = rows.map((r) => Number(r.QualityScore)).filter(Number.isFinite);
-  if (!nums.length) return { pct: 90.0, note: 'KPI_Quality rows without numeric QualityScore.' };
+  if (!nums.length) return { pct: 90.0, note: 'Batch quality pipeline rows without numeric QualityScore.' };
   return {
     pct: Math.round(mean(nums) * 10) / 10,
-    note: `From KPI_Quality: average QualityScore across ${nums.length} batch row(s).`,
+    note: `From batch quality pipeline: average QualityScore across ${nums.length} batch record(s).`,
   };
 }
 

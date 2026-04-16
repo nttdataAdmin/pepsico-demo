@@ -17,6 +17,8 @@ import { SITE_LOCATIONS } from '../../config/siteLocations';
 import ExecutiveKeyMetrics from './ExecutiveKeyMetrics';
 import ExecutiveRecommendationsModal from './ExecutiveRecommendationsModal';
 import { getNoGoPitchNarrative } from './nogoPitchNarrative';
+import { getGoPitchNarrative } from './goPitchNarrative';
+import { buildExecutiveKpiModel } from '../../utils/executiveKpiModel';
 import './ExecutiveSummary.css';
 
 const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChange }) => {
@@ -35,6 +37,60 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
     if (!qcNoGo || !flow.formClassifyMeta) return null;
     return getNoGoPitchNarrative(flow.operatorRole);
   }, [qcNoGo, flow.formClassifyMeta, flow.operatorRole]);
+
+  const goPitch = useMemo(() => {
+    if (!qcGo || !flow.formClassifyMeta) return null;
+    return getGoPitchNarrative(flow.operatorRole);
+  }, [qcGo, flow.formClassifyMeta, flow.operatorRole]);
+
+  const decisionKpiModel = useMemo(
+    () =>
+      buildExecutiveKpiModel({
+        filters,
+        operatorRole: flow.operatorRole,
+        qcGo,
+        selectedMonth,
+        selectedYear,
+        excelBundle: excelBundle || {},
+      }),
+    [filters, flow.operatorRole, qcGo, selectedMonth, selectedYear, excelBundle]
+  );
+
+  const decisionKpiRows = useMemo(() => {
+    if (!decisionKpiModel) return [];
+    return [
+      {
+        label: 'Quality score',
+        value: decisionKpiModel.qualityScorePct.toFixed(1),
+        unit: '%',
+        band: decisionKpiModel.bands.quality,
+      },
+      {
+        label: 'Productivity index',
+        value: decisionKpiModel.productivityPct.toFixed(1),
+        unit: '%',
+        band: decisionKpiModel.bands.productivity,
+      },
+      {
+        label: 'Wastage',
+        value: decisionKpiModel.wastagePct.toFixed(1),
+        unit: '%',
+        band: decisionKpiModel.bands.wastage,
+      },
+    ];
+  }, [decisionKpiModel]);
+
+  const decisionKpiLines = useMemo(
+    () => decisionKpiRows.map((r) => `${r.label}: ${r.value}${r.unit} (${r.band?.label || '—'})`),
+    [decisionKpiRows]
+  );
+
+  const noGoBadKpiLines = useMemo(() => {
+    const badOnly = decisionKpiRows
+      .filter((r) => r.band?.key === 'bad')
+      .map((r) => `${r.label}: ${r.value}${r.unit} (${r.band?.label || '—'})`);
+    return badOnly.length ? badOnly : ['No KPI is currently in Bad band for this scope.'];
+  }, [decisionKpiRows]);
 
   const [summary, setSummary] = useState(null);
   const [assets, setAssets] = useState([]);
@@ -266,9 +322,44 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
             <h3 className="es-nogo-subheading">{noGoPitch.whyHeading}</h3>
             <p className="es-nogo-why-text">{noGoPitch.why}</p>
           </div>
+          <h3 className="es-nogo-subheading">Bad KPI scores at decision time</h3>
+          <ul className="es-nogo-breakdown-list es-kpi-score-list">
+            {noGoBadKpiLines.map((line, i) => (
+              <li key={`nogo-kpi-${i}`}>{line}</li>
+            ))}
+          </ul>
           <h3 className="es-nogo-subheading">{noGoPitch.stepsHeading}</h3>
           <ul className="es-nogo-breakdown-list">
             {noGoPitch.steps.map((line, i) => (
+              <li key={i}>{line}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {qcGo && flow.formClassifyMeta && goPitch ? (
+        <div className="es-go-breakdown card" role="region" aria-labelledby="go-breakdown-heading">
+          <h2 id="go-breakdown-heading" className="es-go-breakdown-title">
+            {goPitch.title}
+          </h2>
+          <p className="es-go-breakdown-lead">{goPitch.lead}</p>
+          <div className="es-go-extraction" role="region" aria-label={goPitch.extractionHeading}>
+            <h3 className="es-go-subheading">{goPitch.extractionHeading}</h3>
+            <p className="es-go-extraction-text">{goPitch.extraction}</p>
+          </div>
+          <div className="es-go-why" role="region" aria-label={goPitch.whyHeading}>
+            <h3 className="es-go-subheading">{goPitch.whyHeading}</h3>
+            <p className="es-go-why-text">{goPitch.why}</p>
+          </div>
+          <h3 className="es-go-subheading">KPI scores at decision time</h3>
+          <ul className="es-go-breakdown-list es-kpi-score-list">
+            {decisionKpiLines.map((line, i) => (
+              <li key={`go-kpi-${i}`}>{line}</li>
+            ))}
+          </ul>
+          <h3 className="es-go-subheading">{goPitch.stepsHeading}</h3>
+          <ul className="es-go-breakdown-list">
+            {goPitch.steps.map((line, i) => (
               <li key={i}>{line}</li>
             ))}
           </ul>
