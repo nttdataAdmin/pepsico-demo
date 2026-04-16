@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { getRootCauseAnalysis, getAnomalies } from '../../data/mockData';
+import { getRootCauseAnalysis, getAnomalies, getRcaFormExtractForScope } from '../../data/mockData';
 import FlowVisualization from './FlowVisualization';
 import RcaTraceGraphic from './RcaTraceGraphic';
 import SelectPlaceGate from '../Layout/SelectPlaceGate';
@@ -142,9 +142,14 @@ const RootCauseAnalysis = ({ selectedMonth, selectedYear, filters, onFiltersChan
     );
   }, [rootCauseData, selectedPath, thresholdCrossings, filters.state, filters.plant]);
 
+  const rcaFormExtract = useMemo(
+    () => getRcaFormExtractForScope(filters, selectedPath, flow.operatorRole),
+    [filters.state, filters.plant, filters.asset_id, selectedPath.asset_id, selectedPath.plant, flow.operatorRole]
+  );
+
   const corroborationModel = useMemo(
-    () => buildRcaCorroborationPanelModel(excelBundle || {}, rcaSnap),
-    [excelBundle, rcaSnap]
+    () => buildRcaCorroborationPanelModel(excelBundle || {}, rcaSnap, rcaFormExtract),
+    [excelBundle, rcaSnap, rcaFormExtract]
   );
 
   const rootCausesByAssetForChat = useMemo(() => {
@@ -311,6 +316,7 @@ const RootCauseAnalysis = ({ selectedMonth, selectedYear, filters, onFiltersChan
         scopeState={filters.state}
         scopePlant={filters.plant || null}
       />
+
     </div>
   );
 };

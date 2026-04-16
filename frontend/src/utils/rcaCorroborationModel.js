@@ -65,6 +65,29 @@ function buildEquipmentTreeFromSnap(snap) {
   ];
 }
 
+/**
+ * JOB AID / packaging line OCR fields as equipment-tree rows (same facts as the former form strip).
+ * @param {object|null} extract
+ * @returns {Array<{ depth: number, label: string, meta: string, note?: boolean }>}
+ */
+export function buildRcaFormExtractEquipmentTreeNodes(extract) {
+  if (!extract || typeof extract !== 'object') return [];
+  const depth = 5;
+  const nodes = [
+    { depth, label: 'Machine no.', meta: String(extract.machineNo ?? '—') },
+    { depth, label: 'UPC / film code', meta: String(extract.upcFilmCode ?? '—') },
+    { depth, label: 'Nitrogen flush % O₂', meta: String(extract.nitrogenFlushO2 ?? '—') },
+    { depth, label: 'Wt. (oz / gm)', meta: String(extract.weightGm ?? '—') },
+    { depth, label: 'Air fill level (1)', meta: String(extract.airFill1 ?? '—') },
+    { depth, label: 'Air fill level (2)', meta: String(extract.airFill2 ?? '—') },
+  ];
+  const hc = extract.headerContext != null ? String(extract.headerContext).trim() : '';
+  if (hc) {
+    nodes.push({ depth, label: 'Header context (partial read)', meta: hc, note: true });
+  }
+  return nodes;
+}
+
 function normalizeParetoFromCauses(rootCauses) {
   const rows = rootCauses.map((c) => ({
     label: c.cause,
@@ -79,8 +102,9 @@ function normalizeParetoFromCauses(rootCauses) {
 /**
  * @param {object} bundle - excel bundle
  * @param {object|null} snap - deriveRcaFlowSnapshot result
+ * @param {object|null} [formExtract] - getRcaFormExtractForScope(); merged under equipment tree when present
  */
-export function buildRcaCorroborationPanelModel(bundle, snap) {
+export function buildRcaCorroborationPanelModel(bundle, snap, formExtract = null) {
   const { steps, extraReasons } = buildRcaSignals(bundle || {});
 
   const fromModel = snap?.rootCauses?.length ? normalizeParetoFromCauses(snap.rootCauses) : null;
@@ -98,12 +122,14 @@ export function buildRcaCorroborationPanelModel(bundle, snap) {
     fiveWhys = buildDefaultFiveWhys(snap);
   }
 
-  const tree = buildEquipmentTreeFromSnap(snap);
+  const formNodes = buildRcaFormExtractEquipmentTreeNodes(formExtract);
+  const tree = [...buildEquipmentTreeFromSnap(snap), ...formNodes];
 
   return {
     pareto,
     fiveWhys,
     tree,
+    treeHasJobAidFields: formNodes.length > 0,
     excelSteps: steps,
     extraReasons,
   };

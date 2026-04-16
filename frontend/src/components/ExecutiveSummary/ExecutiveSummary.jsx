@@ -357,6 +357,7 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
             qcGo={qcGo}
             selectedMonth={selectedMonth}
             selectedYear={selectedYear}
+            excelBundle={excelBundle}
           />
 
           {qcGo ? (

@@ -2,6 +2,34 @@
   width: 100%;
 }
 
+.rec-owner-block {
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 92, 188, 0.2);
+  background: linear-gradient(165deg, rgba(0, 92, 188, 0.06) 0%, #fff 70%);
+}
+
+.rec-owner-block-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.88rem;
+  color: #003087;
+}
+
+.rec-owner-block-list {
+  margin: 0 0 0.5rem;
+  padding-left: 1.2rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #2a3540;
+}
+
+.rec-owner-block-note {
+  margin: 0;
+  font-size: 0.76rem;
+  color: #5a6570;
+}
+
 .rec-cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

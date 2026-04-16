@@ -388,6 +388,13 @@
   color: #6b7280;
 }
 
+.rca-equip-tree-node--note .rca-equip-tree-meta {
+  font-style: italic;
+  font-size: 0.64rem;
+  color: #9ca3af;
+  line-height: 1.4;
+}
+
 .rca-corr-excel {
   margin-top: 1rem;
   padding-top: 1rem;

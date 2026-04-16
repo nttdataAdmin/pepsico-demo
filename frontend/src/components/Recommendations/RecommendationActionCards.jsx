@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { formatCmmsRecommendationRecordLine, getAssignableWorkcenterRoleNames } from '../../data/mockData';
+import { getOwnerPrerequisiteSteps } from '../../utils/ownerPrerequisiteSteps';
 import RecommendationReviewControls from './RecommendationReviewControls';
 import './RecommendationsTable.css';
 import './RecommendationActionCards.css';
@@ -16,6 +17,7 @@ const RecommendationActionCards = ({
   aiRecommendations,
   onClosePopup,
   userEmail,
+  operatorRole,
 }) => {
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [reviewByAsset, setReviewByAsset] = useState({});
@@ -59,8 +61,19 @@ const RecommendationActionCards = ({
     );
   }
 
+  const ownerSteps = getOwnerPrerequisiteSteps(operatorRole);
+
   return (
     <div className="rec-cards-root">
+      <section className="rec-owner-block card" aria-label="Owner prerequisite steps">
+        <h4 className="rec-owner-block-title">Owner — do these steps first</h4>
+        <ol className="rec-owner-block-list">
+          {ownerSteps.map((s) => (
+            <li key={s.n}>{s.text}</li>
+          ))}
+        </ol>
+        <p className="rec-owner-block-note">Complete the checklist, then use synthesized guidance per asset below.</p>
+      </section>
       <div className="rec-cards-grid">
         {recommendations.map((rec, index) => (
           <article key={`${rec.asset_id}-${index}`} className="rec-action-card">

@@ -2,6 +2,9 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { getRecommendations, getAssetsFiltered, getAssignableWorkcenterRoleNames } from '../../data/mockData';
 import { getAIRecommendation } from '../../services/aiService';
+import { useAppFlow } from '../../context/AppFlowContext';
+import { buildExecutiveKpiModel, formatKpiDigestForPrompt } from '../../utils/executiveKpiModel';
+import { getOwnerPrerequisiteSteps } from '../../utils/ownerPrerequisiteSteps';
 import RecommendationReviewControls from '../Recommendations/RecommendationReviewControls';
 import './ExecutiveRecommendationsModal.css';
 
@@ -22,6 +25,8 @@ export default function ExecutiveRecommendationsModal({
   operatorRole,
   userEmail,
 }) {
+  const { flow, excelBundle } = useAppFlow();
+  const ownerSteps = useMemo(() => getOwnerPrerequisiteSteps(operatorRole), [operatorRole]);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedKey, setSelectedKey] = useState(null);
@@ -91,6 +96,14 @@ export default function ExecutiveRecommendationsModal({
       setGuidance(null);
       setGuidanceLoading(true);
       const assetRow = getAssetsFiltered({ asset_id: r.asset_id }, { operatorRole })[0] || {};
+      const kpiModel = buildExecutiveKpiModel({
+        filters,
+        operatorRole,
+        qcGo: flow.outcome === 'go',
+        selectedMonth,
+        selectedYear,
+        excelBundle: excelBundle || {},
+      });
       const payload = {
         ...assetRow,
         asset_id: r.asset_id,
@@ -103,6 +116,7 @@ export default function ExecutiveRecommendationsModal({
         year: r.year ?? selectedYear,
         filterContext: filters,
         timestamp: new Date().toISOString(),
+        kpiDigestForAi: formatKpiDigestForPrompt(kpiModel),
       };
       try {
         const text = await getAIRecommendation(payload);
@@ -113,7 +127,7 @@ export default function ExecutiveRecommendationsModal({
         setGuidanceLoading(false);
       }
     },
-    [filterParams.month, filters, operatorRole, selectedMonth, selectedYear]
+    [filterParams.month, filters, operatorRole, selectedMonth, selectedYear, excelBundle, flow.outcome]
   );
 
   if (!open) return null;
@@ -140,6 +154,14 @@ export default function ExecutiveRecommendationsModal({
           Use <strong>Enter detailed analysis</strong> on the executive page when you need the full five-tab workspace
           (Anomalies → RCA → Actions → Planned downtime).
         </p>
+        <div className="es-rec-modal-owner" role="region" aria-label="Owner prerequisite steps">
+          <h4 className="es-rec-modal-owner-title">Owner — do these steps first</h4>
+          <ol className="es-rec-modal-owner-list">
+            {ownerSteps.map((s) => (
+              <li key={s.n}>{s.text}</li>
+            ))}
+          </ol>
+        </div>
         {loading ? (
           <p className="es-rec-modal-loading">Loading recommendation queue…</p>
         ) : !filters.state ? (

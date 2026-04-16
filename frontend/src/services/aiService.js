@@ -62,7 +62,15 @@ Your recommendations should be:
 - Professional yet accessible, using technical terminology appropriately
 - Prioritized by urgency and impact
 
-Format your response with clear sections, use bullet points for actions, and include specific metrics, timelines, and expected outcomes.`;
+Format your response with clear sections, use bullet points for actions, and include specific metrics, timelines, and expected outcomes.${
+      assetData.kpiDigestForAi
+        ? '\n\nWhen the user message includes an **Executive KPI snapshot**, start with the exact heading **Based on these KPIs:** on its own line, then restate every KPI with its % and Good/Watch/Bad label. Tie each recommendation cluster to which KPI(s) it improves.'
+        : ''
+    }`;
+
+    const kpiSection = assetData.kpiDigestForAi
+      ? `**Executive KPI snapshot (must appear in your opening):**\n${assetData.kpiDigestForAi}\n\n`
+      : '';
 
     const userPrompt = `Analyze the following asset and provide a comprehensive, expressive maintenance recommendation:
 
@@ -96,7 +104,7 @@ ${pastEvents.map(e => `- ${e.date} ${e.time}: ${e.description} (${e.type}, ${e.t
 **CMMS Workcenterroles (copy verbatim; same field as Planned downtime / work-order CMMS row for this asset):**
 ${cmmsResponsible}
 
-**Please provide a comprehensive recommendation that includes:**
+${kpiSection}**Please provide a comprehensive recommendation that includes:**
 
 1. **Executive Summary** (2-3 sentences explaining the overall situation and urgency)
 
@@ -176,8 +184,11 @@ Make your recommendation expressive, detailed, and tailored specifically to this
     const location = assetData.plant || assetData.state || 'Unknown location';
     const assetType = assetData.asset_type || 'Asset';
     const responsible = getResponsiblePartyForAsset(assetData.asset_id);
-    
-    return `**AI Recommendation for ${assetData.asset_id || 'Asset'}**\n\n**Executive Summary:**\nThis ${assetType} located at ${location} is currently in ${status} status with ${criticality} criticality. Based on the available data, immediate attention is required to prevent potential operational disruptions.\n\n**Immediate Actions Required:**\n${status === 'Breakdown' ? '1. **Emergency Response:** Dispatch emergency maintenance team immediately. Isolate the asset from production line to prevent cascading failures.\n2. **Safety Protocol:** Ensure all safety procedures are followed during shutdown and inspection.\n3. **Assessment:** Conduct comprehensive diagnostic assessment within 2 hours.' : status === 'Failure Predicted' ? '1. **Preventive Maintenance:** Schedule preventive maintenance within 48 hours to address predicted failure.\n2. **Increased Monitoring:** Implement hourly condition monitoring checks.\n3. **Resource Allocation:** Assign dedicated maintenance team and prepare replacement parts inventory.' : '1. **Continue Monitoring:** Maintain current monitoring schedule.\n2. **Routine Maintenance:** Proceed with scheduled maintenance program.\n3. **Documentation:** Update maintenance logs and track performance metrics.'}\n\n**Workcenterroles (CMMS row):**\n- ${responsible}\n\n**Detailed Analysis:**\nThe asset's current condition suggests ${criticality === 'High' ? 'significant risk factors that require immediate intervention' : 'moderate wear patterns that should be addressed proactively'}. Historical data indicates potential bearing-related issues and structural wear that could escalate if not addressed.\n\n**Preventive Measures:**\n- Implement enhanced vibration monitoring with real-time alerts\n- Establish quarterly bearing inspection schedule\n- Review and optimize lubrication protocols\n- Conduct thermal imaging analysis monthly\n- Train maintenance staff on early warning signs\n\n**Risk Assessment:**\n${criticality === 'High' ? '**High Risk:** Probability of unplanned downtime: 75-85%. Estimated production impact: $50,000-$100,000 per day. Immediate action required to mitigate catastrophic failure risk.' : '**Moderate Risk:** Probability of unplanned downtime: 30-45%. Estimated production impact: $20,000-$40,000 per day. Proactive maintenance recommended within next maintenance window.'}\n\n**Expected Outcomes:**\n- Extended asset life by 30-40% through proactive maintenance\n- Reduction in unplanned downtime by 60-75%\n- Improved reliability metrics (MTBF increase of 25-35%)\n- Cost savings of $100,000-$200,000 annually through preventive measures\n- Enhanced safety compliance and reduced environmental risks\n\n**Next Steps:**\n1. Review with ${responsible} (within 24 hours)\n2. Prepare maintenance work order aligned with Planned downtime (within 48 hours)\n3. Schedule maintenance window with production (within 1 week)\n4. Implement enhanced monitoring (within 2 weeks)`;
+    const kpiIntro = assetData.kpiDigestForAi
+      ? `**Based on these KPIs:**\n${assetData.kpiDigestForAi}\n\n`
+      : '';
+
+    return `${kpiIntro}**AI Recommendation for ${assetData.asset_id || 'Asset'}**\n\n**Executive Summary:**\nThis ${assetType} located at ${location} is currently in ${status} status with ${criticality} criticality. Based on the available data, immediate attention is required to prevent potential operational disruptions.\n\n**Immediate Actions Required:**\n${status === 'Breakdown' ? '1. **Emergency Response:** Dispatch emergency maintenance team immediately. Isolate the asset from production line to prevent cascading failures.\n2. **Safety Protocol:** Ensure all safety procedures are followed during shutdown and inspection.\n3. **Assessment:** Conduct comprehensive diagnostic assessment within 2 hours.' : status === 'Failure Predicted' ? '1. **Preventive Maintenance:** Schedule preventive maintenance within 48 hours to address predicted failure.\n2. **Increased Monitoring:** Implement hourly condition monitoring checks.\n3. **Resource Allocation:** Assign dedicated maintenance team and prepare replacement parts inventory.' : '1. **Continue Monitoring:** Maintain current monitoring schedule.\n2. **Routine Maintenance:** Proceed with scheduled maintenance program.\n3. **Documentation:** Update maintenance logs and track performance metrics.'}\n\n**Workcenterroles (CMMS row):**\n- ${responsible}\n\n**Detailed Analysis:**\nThe asset's current condition suggests ${criticality === 'High' ? 'significant risk factors that require immediate intervention' : 'moderate wear patterns that should be addressed proactively'}. Historical data indicates potential bearing-related issues and structural wear that could escalate if not addressed.\n\n**Preventive Measures:**\n- Implement enhanced vibration monitoring with real-time alerts\n- Establish quarterly bearing inspection schedule\n- Review and optimize lubrication protocols\n- Conduct thermal imaging analysis monthly\n- Train maintenance staff on early warning signs\n\n**Risk Assessment:**\n${criticality === 'High' ? '**High Risk:** Probability of unplanned downtime: 75-85%. Estimated production impact: $50,000-$100,000 per day. Immediate action required to mitigate catastrophic failure risk.' : '**Moderate Risk:** Probability of unplanned downtime: 30-45%. Estimated production impact: $20,000-$40,000 per day. Proactive maintenance recommended within next maintenance window.'}\n\n**Expected Outcomes:**\n- Extended asset life by 30-40% through proactive maintenance\n- Reduction in unplanned downtime by 60-75%\n- Improved reliability metrics (MTBF increase of 25-35%)\n- Cost savings of $100,000-$200,000 annually through preventive measures\n- Enhanced safety compliance and reduced environmental risks\n\n**Next Steps:**\n1. Review with ${responsible} (within 24 hours)\n2. Prepare maintenance work order aligned with Planned downtime (within 48 hours)\n3. Schedule maintenance window with production (within 1 week)\n4. Implement enhanced monitoring (within 2 weeks)`;
   }
 };
 

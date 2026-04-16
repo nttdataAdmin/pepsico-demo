@@ -349,12 +349,17 @@ export function RcaCorroborationPanel({ model: modelProp = null }) {
           <h4 id="rca-tree-title" className="rca-corr-card-title">
             Equipment tree
           </h4>
-          <p className="rca-corr-card-lead">Physical hierarchy for anchoring evidence—not a substitute for the line walk.</p>
+          <p className="rca-corr-card-lead">
+            Physical hierarchy for anchoring evidence—not a substitute for the line walk.
+            {model.treeHasJobAidFields
+              ? ' OCR-extracted JOB AID fields (machine no., UPC / film code, packaging checks) continue the same list below.'
+              : ''}
+          </p>
           <ul className="rca-equip-tree">
             {model.tree.map((node, idx) => (
               <li
                 key={`${node.label}-${idx}`}
-                className="rca-equip-tree-node"
+                className={`rca-equip-tree-node${node.note ? ' rca-equip-tree-node--note' : ''}`}
                 style={{ paddingLeft: `${node.depth * 0.85 + 0.25}rem` }}
               >
                 <span className="rca-equip-tree-label">{node.label}</span>

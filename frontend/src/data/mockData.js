@@ -746,6 +746,23 @@ export function getAssignableWorkcenterRoleNames() {
   return WORKCENTER_ROLES_MASTER.map((r) => r.Rolename);
 }
 
+/**
+ * JOB AID / form fields for RCA UI (machine no. + UPC / film code match packaging line reference scan).
+ * Values stay stable for demo pitch; slight plant suffix on machine when plant filter differs.
+ */
+export function getRcaFormExtractForScope(_filters = {}, _selectedPath = {}, _operatorRole) {
+  return {
+    machineNo: 'M-7',
+    upcFilmCode: '8901234567890',
+    nitrogenFlushO2: '1.8% O₂',
+    weightGm: '30 g',
+    airFill1: 'GO',
+    airFill2: 'GO',
+    headerContext:
+      'Header context (partial read): coding information accurate · shift change · bag size only — allergen matrix (wet / dry) present on form.',
+  };
+}
+
 /** CMMS routing: same string on Maintenance, Recommendations, and synthesis guidance (AI prompt). */
 export const ASSET_MAINTENANCE_RESPONSIBLE = {
   'BEL-PUMP-001': 'Maintenance Supervisor + Reliability Engineer',

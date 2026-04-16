@@ -214,3 +214,25 @@
 .es-rec-modal-btn:hover {
   background: #004a9a;
 }
+
+.es-rec-modal-owner {
+  margin: 0 1.25rem 0.85rem;
+  padding: 10px 12px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 92, 188, 0.22);
+  background: rgba(0, 92, 188, 0.05);
+}
+
+.es-rec-modal-owner-title {
+  margin: 0 0 0.45rem;
+  font-size: 0.82rem;
+  color: #003087;
+}
+
+.es-rec-modal-owner-list {
+  margin: 0;
+  padding-left: 1.15rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #2a3540;
+}

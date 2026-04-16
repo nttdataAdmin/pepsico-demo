@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { getRecommendations, getAssetsFiltered } from '../../data/mockData';
 import { getAIRecommendation } from '../../services/aiService';
+import { buildExecutiveKpiModel, formatKpiDigestForPrompt } from '../../utils/executiveKpiModel';
 import RecommendationActionCards from './RecommendationActionCards';
 import SelectPlaceGate from '../Layout/SelectPlaceGate';
 import { DataFeedHint, OperationalActionsPanel } from '../Agentic/IntegratedDataPanels';
@@ -11,7 +12,7 @@ import { operatorRoleShort } from '../../utils/operatorRole';
 import './Recommendations.css';
 
 const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange }) => {
-  const { flow } = useAppFlow();
+  const { flow, excelBundle } = useAppFlow();
   const isManager = flow.accountRole === 'manager';
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +67,18 @@ const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange
     }, 300);
   };
 
+  const kpiDigestForAi = useMemo(() => {
+    const m = buildExecutiveKpiModel({
+      filters,
+      operatorRole: flow.operatorRole,
+      qcGo: flow.outcome === 'go',
+      selectedMonth,
+      selectedYear,
+      excelBundle: excelBundle || {},
+    });
+    return formatKpiDigestForPrompt(m);
+  }, [filters, flow.operatorRole, flow.outcome, selectedMonth, selectedYear, excelBundle]);
+
   const generateAIRecommendationsForFiltered = async () => {
     const filteredAssets = getAssetsFiltered(filters, { operatorRole: flow.operatorRole });
     const newAIRecommendations = {};
@@ -77,6 +90,7 @@ const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange
           year: selectedYear,
           filterContext: filters,
           timestamp: new Date().toISOString(),
+          kpiDigestForAi,
         });
         newAIRecommendations[asset.asset_id] = recommendation;
       } catch {
@@ -100,6 +114,7 @@ const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange
         month: selectedMonth,
         year: selectedYear,
         filterContext: filters,
+        kpiDigestForAi,
       });
       setAiRecommendation(recommendation);
       setAiRecommendations((prev) => ({ ...prev, [assetId]: recommendation }));
@@ -190,6 +205,7 @@ const Recommendations = ({ selectedMonth, selectedYear, filters, onFiltersChange
         aiRecommendations={aiRecommendations}
         onClosePopup={() => setAiRecommendation(null)}
         userEmail={flow.userEmail}
+        operatorRole={flow.operatorRole}
       />
 
       <div className="rec-legend">

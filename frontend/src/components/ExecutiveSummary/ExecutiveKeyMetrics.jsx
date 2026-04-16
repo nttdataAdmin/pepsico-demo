@@ -1,144 +1,231 @@
-import React, { useMemo } from 'react';
-import { getAnomalies, getAssetsFiltered, buildSummaryFromAssets } from '../../data/mockData';
+import React, { useMemo, useState, useCallback } from 'react';
+import { buildExecutiveKpiModel } from '../../utils/executiveKpiModel';
+import { getExecutiveKpiDataPreview } from '../../utils/executiveKpiDataPreview';
 import './ExecutiveKeyMetrics.css';
 
-function mean(nums) {
-  const v = nums.filter((n) => Number.isFinite(n));
-  if (!v.length) return null;
-  return v.reduce((a, b) => a + b, 0) / v.length;
+function TableGridIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden fill="currentColor">
+      <path d="M2 2h5v5H2V2zm7 0h5v5H9V2zM2 9h5v5H2V9zm7 0h5v5H9V9z" opacity="0.92" />
+    </svg>
+  );
 }
 
-/** Deterministic 0–1 scalar from scope strings (no RNG — stable per selection). */
-function scopeUnit(...parts) {
-  let h = 2166136261 >>> 0;
-  const s = parts.filter(Boolean).join('|');
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619) >>> 0;
-  }
-  return (h % 10007) / 10007;
+function KpiDataModal({ open, preview, tileLabel, onClose }) {
+  if (!open || !preview) return null;
+  const { title, subtitle, columns, rows } = preview;
+  return (
+    <div className="es-kpi-modal-overlay" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="es-kpi-modal es-kpi-modal--data card" role="dialog" aria-modal="true" aria-labelledby="es-kpi-data-title">
+        <header className="es-kpi-modal-head">
+          <div className="es-kpi-modal-head-main">
+            <h4 id="es-kpi-data-title">{title}</h4>
+            {tileLabel ? <p className="es-kpi-modal-tile-ref">Key metric · {tileLabel}</p> : null}
+            <p className="es-kpi-modal-sub">{subtitle}</p>
+          </div>
+          <button type="button" className="es-kpi-modal-close" onClick={onClose} aria-label="Close">
+            ×
+          </button>
+        </header>
+        {columns.length && rows.length ? (
+          <div className="es-kpi-data-table-wrap">
+            <table className="es-kpi-data-table">
+              <thead>
+                <tr>
+                  {columns.map((c) => (
+                    <th key={c} scope="col">
+                      {c}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, ri) => (
+                  <tr key={ri}>
+                    {columns.map((c) => (
+                      <td key={c}>{row[c] === '' || row[c] == null ? '—' : String(row[c])}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="es-kpi-modal-empty">{subtitle}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function KpiWhyModal({ open, title, body, onClose }) {
+  if (!open) return null;
+  return (
+    <div className="es-kpi-modal-overlay" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="es-kpi-modal card" role="dialog" aria-modal="true" aria-labelledby="es-kpi-modal-title">
+        <header className="es-kpi-modal-head">
+          <h4 id="es-kpi-modal-title">{title}</h4>
+          <button type="button" className="es-kpi-modal-close" onClick={onClose} aria-label="Close">
+            ×
+          </button>
+        </header>
+        <div className="es-kpi-modal-body">{body}</div>
+      </div>
+    </div>
+  );
+}
+
+function BandBadge({ band }) {
+  if (!band) return null;
+  const cls =
+    band.key === 'good' ? 'es-kpi-band--good' : band.key === 'watch' ? 'es-kpi-band--watch' : 'es-kpi-band--bad';
+  return <span className={`es-kpi-band ${cls}`}>{band.label}</span>;
 }
 
 /**
- * Average each asset's series first, then average across assets — differs from pooling all timestamps,
- * so Beloit vs Jonesboro and plant filters separate more naturally.
+ * Key metrics: fleet-derived + super_excel (Consumer_Complaints, Worker_Satisfaction, KPI_Quality) when loaded.
  */
-function perAssetFieldMean(rows, field) {
-  const byAsset = new Map();
-  for (const r of rows) {
-    const id = r.asset_id || '_';
-    if (!byAsset.has(id)) byAsset.set(id, []);
-    const v = Number(r[field]);
-    if (Number.isFinite(v)) byAsset.get(id).push(v);
-  }
-  const perAssetAvgs = [...byAsset.values()].map((arr) => mean(arr)).filter((x) => x != null);
-  return mean(perAssetAvgs);
-}
-
-function wastagePercent(summary, qcGo, scopeKey, month, year) {
-  const total = Math.max(summary.total, 1);
-  if (qcGo) {
-    const u = scopeUnit(scopeKey, 'go', month, year, String(summary.total));
-    return 0.45 + u * 0.95;
-  }
-  const fp = summary.failure_predicted;
-  const um = summary.under_maintenance;
-  const bd = summary.breakdown;
-  const stress = (fp * 1.15 + um * 0.85 + bd * 2.05) / total;
-  const u = scopeUnit(scopeKey, 'nogo', month, String(fp), String(bd));
-  return Math.round((0.85 + stress * 9.2 + u * 1.25) * 10) / 10;
-}
-
-function productivityPercent(summary, qcGo, scopeKey, month, year, wastagePct) {
-  const total = Math.max(summary.total, 1);
-  const wShare = summary.working / total;
-  if (qcGo) {
-    const u = scopeUnit(scopeKey, 'prod', month, year, 'qc');
-    return Math.round((94.6 + u * 4.6 + wShare * 1.8) * 10) / 10;
-  }
-  const bdShare = summary.breakdown / total;
-  const raw = 99.2 - wastagePct * 2.05 - bdShare * 11.5 + wShare * 4.5;
-  return Math.round(Math.max(71, Math.min(98.8, raw)) * 10) / 10;
-}
-
-/**
- * Key metrics: wastage / productivity from fleet counts + scope (state, plant, lens, period).
- * Temperature / vibration from per-asset CM averages for the filtered anomaly slice.
- */
-export default function ExecutiveKeyMetrics({ filters, operatorRole, qcGo, selectedMonth, selectedYear }) {
-  const scopeKey = [filters.state, filters.plant, filters.asset_id, operatorRole].filter(Boolean).join('·') || 'fleet';
-
-  const assets = useMemo(
-    () => getAssetsFiltered(filters, { operatorRole }),
-    [filters.state, filters.plant, filters.asset_id, operatorRole]
+export default function ExecutiveKeyMetrics({
+  filters,
+  operatorRole,
+  qcGo,
+  selectedMonth,
+  selectedYear,
+  excelBundle,
+}) {
+  const model = useMemo(
+    () =>
+      buildExecutiveKpiModel({
+        filters,
+        operatorRole,
+        qcGo,
+        selectedMonth,
+        selectedYear,
+        excelBundle: excelBundle || {},
+      }),
+    [filters, operatorRole, qcGo, selectedMonth, selectedYear, excelBundle]
   );
 
-  const summary = useMemo(() => buildSummaryFromAssets(assets), [assets]);
+  const [why, setWhy] = useState({ open: false, title: '', body: '' });
+  const openWhy = useCallback((title, body) => setWhy({ open: true, title, body }), []);
+  const closeWhy = useCallback(() => setWhy((s) => ({ ...s, open: false })), []);
 
-  const rows = useMemo(
-    () => getAnomalies({ state: filters.state, plant: filters.plant }, { operatorRole }),
-    [filters.state, filters.plant, operatorRole]
+  const [dataModal, setDataModal] = useState({ open: false, preview: null, tileLabel: '' });
+  const openDataPreview = useCallback(
+    (tileId, tileLabel) => {
+      const preview = getExecutiveKpiDataPreview(tileId, {
+        excelBundle: excelBundle || {},
+        filters,
+        model,
+        operatorRole,
+      });
+      setDataModal({ open: true, preview, tileLabel });
+    },
+    [excelBundle, filters, model, operatorRole]
   );
+  const closeDataPreview = useCallback(() => setDataModal({ open: false, preview: null, tileLabel: '' }), []);
 
-  const avgTemp = useMemo(() => perAssetFieldMean(rows, 'temperature'), [rows]);
-  const avgVib = useMemo(() => perAssetFieldMean(rows, 'vibration'), [rows]);
+  const { summary, rows, assetCountInTelemetry, workingPct } = model;
 
-  const wastagePct = useMemo(
-    () => wastagePercent(summary, qcGo, scopeKey, selectedMonth, selectedYear),
-    [summary, qcGo, scopeKey, selectedMonth, selectedYear]
-  );
-
-  const productivityPct = useMemo(
-    () => productivityPercent(summary, qcGo, scopeKey, selectedMonth, selectedYear, wastagePct),
-    [summary, qcGo, scopeKey, selectedMonth, selectedYear, wastagePct]
-  );
-
-  const assetCountInTelemetry = useMemo(() => {
-    const ids = new Set(rows.map((r) => r.asset_id).filter(Boolean));
-    return ids.size;
-  }, [rows]);
-
-  const workingPct = ((summary.working / Math.max(summary.total, 1)) * 100).toFixed(0);
-  const items = [
+  const tiles = [
     {
       id: 'wastage',
       label: 'Wastage (yield loss)',
-      value: `${wastagePct.toFixed(1)}%`,
+      value: `${model.wastagePct.toFixed(1)}%`,
+      band: model.bands.wastage,
       sub:
         filters.state == null
           ? 'Select a site to anchor yield loss vs fleet posture'
           : qcGo
             ? `Nominal band · ${summary.total} assets in scope`
             : `From ${summary.breakdown} down / ${summary.failure_predicted} predicted / ${summary.under_maintenance} in PM`,
+      whyTitle: 'Why this % · wastage',
+      whyBody: model.reasons.wastage,
     },
     {
       id: 'productivity',
-      label: 'Productivity index',
-      value: `${productivityPct.toFixed(1)}%`,
+      label: 'Production index',
+      value: `${model.productivityPct.toFixed(1)}%`,
+      band: model.bands.productivity,
       sub:
         filters.state == null
           ? 'Throughput index updates after you pick a territory'
           : qcGo
             ? `Line rate vs plan · working share ${workingPct}%`
             : `Throughput vs schedule · ${selectedMonth} ${selectedYear}`,
+      whyTitle: 'Why this % · production index',
+      whyBody: model.reasons.productivity,
+      extraLine: model.reasons.productivity,
+    },
+    {
+      id: 'complaints',
+      label: 'Consumer complaint load',
+      value: `${model.consumerComplaintLoadPct.toFixed(1)}%`,
+      band: model.bands.consumerComplaints,
+      sub: 'Lower is better · blended from Consumer_Complaints in super_excel',
+      whyTitle: 'Why this % · complaints',
+      whyBody: model.reasons.consumerComplaints,
+    },
+    {
+      id: 'downtime',
+      label: 'Downtime index',
+      value: `${model.downtimePct.toFixed(1)}%`,
+      band: model.bands.downtime,
+      sub: 'Stoppage pressure vs fleet (breakdown + PM weighting)',
+      whyTitle: 'Why this % · downtime',
+      whyBody: model.reasons.downtime,
+    },
+    {
+      id: 'quality',
+      label: 'Quality score',
+      value: `${model.qualityScorePct.toFixed(1)}%`,
+      band: model.bands.quality,
+      sub: 'Mean QualityScore from KPI_Quality sheet when workbook is loaded',
+      whyTitle: 'Why this % · quality',
+      whyBody: model.reasons.quality,
+    },
+    {
+      id: 'workerSat',
+      label: 'Worker satisfaction',
+      value: `${model.workerSatisfactionPct.toFixed(1)}%`,
+      band: model.bands.workerSatisfaction,
+      sub: 'Comfort + efficiency perception from Worker_Satisfaction sheet',
+      whyTitle: 'Why this % · worker satisfaction',
+      whyBody: model.reasons.workerSatisfaction,
     },
     {
       id: 'temp',
       label: 'Avg. temperature (telemetry)',
-      value: avgTemp != null ? `${avgTemp.toFixed(1)} °C` : '—',
-      sub:
+      value: model.avgTemp != null ? `${model.avgTemp.toFixed(1)} °C` : '—',
+      band: model.bands.temperature,
+      whyBtnLabel: 'Why this value',
+      sub: [
+        model.telemetryTempRangeLabel,
         rows.length && assetCountInTelemetry
           ? `Mean of per-asset means · ${assetCountInTelemetry} asset${assetCountInTelemetry === 1 ? '' : 's'} · ${rows.length} points`
-          : 'Select a site to load historian mix',
+          : filters.state
+            ? 'No temperature points in this scope.'
+            : 'Select a site to load historian mix.',
+      ].join(' · '),
+      whyTitle: 'Temperature · ranges & rollup',
+      whyBody: model.reasons.tempTelemetry,
     },
     {
       id: 'vib',
       label: 'Avg. vibration (RMS)',
-      value: avgVib != null ? `${avgVib.toFixed(1)} mm/s` : '—',
-      sub:
+      value: model.avgVib != null ? `${model.avgVib.toFixed(1)} mm/s` : '—',
+      band: model.bands.vibration,
+      whyBtnLabel: 'Why this value',
+      sub: [
+        model.telemetryVibRangeLabel,
         rows.length && assetCountInTelemetry
           ? `Aligned with production signals · ${filters.plant || filters.state || 'all'}`
-          : 'No vibration series in scope',
+          : filters.state
+            ? 'No vibration points in this scope.'
+            : 'Select a site to load historian mix.',
+      ].join(' · '),
+      whyTitle: 'Vibration · ranges & rollup',
+      whyBody: model.reasons.vibTelemetry,
     },
   ];
 
@@ -146,18 +233,48 @@ export default function ExecutiveKeyMetrics({ filters, operatorRole, qcGo, selec
     <section className="es-key-metrics card" aria-label="Key production metrics">
       <h3 className="es-key-metrics-title">Key metrics</h3>
       <p className="es-key-metrics-lead">
-        Wastage and productivity follow fleet counts for the selected state, plant, operator lens, and period. Temperature
-        and vibration use per-asset averages (then rolled up) so values change when you move between sites or lines.
+        Percentages react to state, plant, operator lens, QC path, and period. Consumer complaints, quality score, and
+        worker satisfaction pull from <strong>super_excel.xlsx</strong> when the workbook is loaded; the rest blend fleet
+        counts with telemetry. The small <strong>grid</strong> icon opens backing tables (Excel sheets for complaints,
+        worker satisfaction, and quality; fleet and historian elsewhere). Use <strong>Why this %</strong> (or{' '}
+        <strong>Why this value</strong> on temperature / vibration) for the derivation note.
       </p>
       <div className="es-key-metrics-grid">
-        {items.map((it) => (
+        {tiles.map((it) => (
           <div key={it.id} className="es-key-metric-tile">
-            <span className="es-key-metric-label">{it.label}</span>
+            <div className="es-key-metric-top">
+              <span className="es-key-metric-label">{it.label}</span>
+              <div className="es-key-metric-top-right">
+                <button
+                  type="button"
+                  className="es-kpi-data-icon"
+                  onClick={() => openDataPreview(it.id, it.label)}
+                  aria-label={`View backing data for ${it.label}`}
+                  title="Backing data"
+                >
+                  <TableGridIcon />
+                </button>
+                {it.band ? <BandBadge band={it.band} /> : null}
+              </div>
+            </div>
             <span className="es-key-metric-value">{it.value}</span>
+            {it.id === 'productivity' && it.extraLine ? (
+              <p className="es-key-metric-reason">{it.extraLine}</p>
+            ) : null}
             <span className="es-key-metric-sub">{it.sub}</span>
+            <button type="button" className="es-kpi-why-btn" onClick={() => openWhy(it.whyTitle, it.whyBody)}>
+              {it.whyBtnLabel || 'Why this %'}
+            </button>
           </div>
         ))}
       </div>
+      <KpiWhyModal open={why.open} title={why.title} body={why.body} onClose={closeWhy} />
+      <KpiDataModal
+        open={dataModal.open}
+        preview={dataModal.preview}
+        tileLabel={dataModal.tileLabel}
+        onClose={closeDataPreview}
+      />
     </section>
   );
 }
