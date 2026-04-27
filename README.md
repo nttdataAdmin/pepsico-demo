@@ -2,7 +2,11 @@
 
 A single application for asset health, production signals, and maintenance coordination. The UI walks an operator from a quality gate through analytics and planned work, with a context-aware assistant on each dashboard step.
 
+<<<<<<< HEAD
+## Capabilities:
+=======
 ## What you get
+>>>>>>> parent of 2d16a8c (Final changes pepsico 4'27)
 
 - **Quality gate** — Upload a form image; the API classifies **Go** vs **No-Go** and routes the session (executive-only positive path vs full analytics with supervisor release).
 - **Operator lens** — **Processing** (fryer, thermal, seasoning story) vs **packaging** (palletizer, case line, conveyors). The same navigation uses lens-specific scenarios so charts, queues, and narratives stay coherent.

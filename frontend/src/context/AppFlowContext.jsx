@@ -52,11 +52,39 @@ function writeFlow(flow) {
 
 const AppFlowContext = createContext(null);
 
+function revokePreview(prev) {
+  if (prev?.objectUrl) {
+    try {
+      URL.revokeObjectURL(prev.objectUrl);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 export function AppFlowProvider({ children }) {
   const [flow, setFlowState] = useState(readFlow);
   const [excelBundle, setExcelBundle] = useState(null);
   const [excelError, setExcelError] = useState(null);
   const [excelLoading, setExcelLoading] = useState(false);
+  /** In-memory preview of last uploaded QC form (blob URL). Cleared on logout / clearFlow. */
+  const [uploadPreview, setUploadPreviewState] = useState({ objectUrl: null, fileName: null });
+
+  const setUploadPreview = useCallback((file) => {
+    setUploadPreviewState((prev) => {
+      revokePreview(prev);
+      if (!file) return { objectUrl: null, fileName: null };
+      const objectUrl = URL.createObjectURL(file);
+      return { objectUrl, fileName: file.name || 'upload' };
+    });
+  }, []);
+
+  const clearUploadPreview = useCallback(() => {
+    setUploadPreviewState((prev) => {
+      revokePreview(prev);
+      return { objectUrl: null, fileName: null };
+    });
+  }, []);
 
   const setFlow = useCallback((next) => {
     setFlowState((prev) => {
@@ -70,7 +98,8 @@ export function AppFlowProvider({ children }) {
     sessionStorage.removeItem(STORAGE_KEY);
     sessionStorage.removeItem(EXCEL_CACHE_KEY);
     setFlowState(defaultFlow());
-  }, []);
+    clearUploadPreview();
+  }, [clearUploadPreview]);
 
   const loadExcel = useCallback(async (force = false) => {
     if (!force) {
@@ -115,8 +144,23 @@ export function AppFlowProvider({ children }) {
       excelLoading,
       loadExcel,
       showNavBar,
+      uploadPreview,
+      setUploadPreview,
+      clearUploadPreview,
     }),
-    [flow, setFlow, clearFlow, excelBundle, excelError, excelLoading, loadExcel, showNavBar]
+    [
+      flow,
+      setFlow,
+      clearFlow,
+      excelBundle,
+      excelError,
+      excelLoading,
+      loadExcel,
+      showNavBar,
+      uploadPreview,
+      setUploadPreview,
+      clearUploadPreview,
+    ]
   );
 
   return <AppFlowContext.Provider value={value}>{children}</AppFlowContext.Provider>;

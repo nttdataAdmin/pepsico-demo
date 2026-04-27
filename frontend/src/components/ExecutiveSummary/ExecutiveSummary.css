@@ -184,6 +184,28 @@
   color: #666;
 }
 
+.es-extracted-cta {
+  margin: -0.35rem 0 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.es-extracted-cta-btn {
+  border: 1px solid rgba(0, 131, 143, 0.45);
+  background: linear-gradient(180deg, #006064 0%, #004d54 100%);
+  color: #e0f7fa;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 77, 84, 0.25);
+}
+
+.es-extracted-cta-btn:hover {
+  filter: brightness(1.08);
+}
+
 .es-flow-banner {
   margin-bottom: 1rem;
   padding: 1.1rem 1.25rem;

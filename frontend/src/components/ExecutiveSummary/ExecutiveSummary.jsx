@@ -16,6 +16,7 @@ import { summarizeExecutiveFeeds } from '../../utils/agenticSynthesis';
 import { SITE_LOCATIONS } from '../../config/siteLocations';
 import ExecutiveKeyMetrics from './ExecutiveKeyMetrics';
 import ExecutiveRecommendationsModal from './ExecutiveRecommendationsModal';
+import ExtractedInfoModal from './ExtractedInfoModal';
 import { getNoGoPitchNarrative } from './nogoPitchNarrative';
 import { getGoPitchNarrative } from './goPitchNarrative';
 import { buildExecutiveKpiModel } from '../../utils/executiveKpiModel';
@@ -23,13 +24,14 @@ import './ExecutiveSummary.css';
 
 const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChange }) => {
   const navigate = useNavigate();
-  const { excelBundle, flow, setFlow } = useAppFlow();
+  const { excelBundle, flow, setFlow, uploadPreview, clearUploadPreview } = useAppFlow();
   const qcGo = flow.outcome === 'go';
   const qcNoGo = flow.outcome === 'no_go';
   const hitlPending = qcNoGo && !flow.hitlApproved;
   const assessmentLocked = qcGo || hitlPending;
   const isManager = flow.accountRole === 'manager';
   const [recModalOpen, setRecModalOpen] = useState(false);
+  const [extractedModalOpen, setExtractedModalOpen] = useState(false);
   const recAutoShownRef = useRef(false);
   const feeds = useMemo(() => summarizeExecutiveFeeds(excelBundle || {}), [excelBundle]);
 
@@ -42,6 +44,16 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
     if (!qcGo || !flow.formClassifyMeta) return null;
     return getGoPitchNarrative(flow.operatorRole);
   }, [qcGo, flow.formClassifyMeta, flow.operatorRole]);
+
+  const extractedImageSrc = useMemo(() => {
+    if (uploadPreview.objectUrl) return uploadPreview.objectUrl;
+    const base = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
+    const prefix = base ? `${base}/` : '/';
+    const key = flow.formClassifyMeta?.fl5883_scan_key;
+    if (key === 'nogo') return `${prefix}forms/nogo.png`;
+    if (key === 'go') return `${prefix}forms/go.png`;
+    return flow.outcome === 'no_go' ? `${prefix}forms/nogo.png` : `${prefix}forms/go.png`;
+  }, [uploadPreview.objectUrl, flow.formClassifyMeta?.fl5883_scan_key, flow.outcome]);
 
   const decisionKpiModel = useMemo(
     () =>
@@ -288,6 +300,14 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
                   : 'No-Go · assessment released'
                 : ''}
           </span>
+        </div>
+      ) : null}
+
+      {flow.formClassifyMeta ? (
+        <div className="es-extracted-cta">
+          <button type="button" className="es-extracted-cta-btn" onClick={() => setExtractedModalOpen(true)}>
+            View extracted information
+          </button>
         </div>
       ) : null}
 
@@ -689,6 +709,7 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
             type="button"
             className="es-flow-btn es-flow-btn--primary"
             onClick={() => {
+              clearUploadPreview();
               setFlow((prev) => ({
                 ...prev,
                 outcome: null,
@@ -712,6 +733,15 @@ const ExecutiveSummary = ({ selectedMonth, selectedYear, filters, onFiltersChang
         selectedYear={selectedYear}
         operatorRole={flow.operatorRole}
         userEmail={flow.userEmail}
+      />
+
+      <ExtractedInfoModal
+        open={extractedModalOpen}
+        onClose={() => setExtractedModalOpen(false)}
+        imageSrc={extractedImageSrc}
+        imageFileName={uploadPreview.fileName || flow.formClassifyMeta?.source_filename || ''}
+        classification={flow.outcome}
+        formClassifyMeta={flow.formClassifyMeta}
       />
     </div>
   );
